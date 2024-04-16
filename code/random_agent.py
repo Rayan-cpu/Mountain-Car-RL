@@ -7,13 +7,13 @@ state, info = env.reset()
 agent = agents.RandomAgent()
 
 
-def run_episode(env, agent):
+def episode_time(env, agent):
     state, info = env.reset()
     done = False
     episode_reward = 0
     count = 0
     while not done:
-        action = agent.select_action(state,env) 
+        action = agent.select_action(state) 
         next_state, reward, terminated, truncated, _ = env.step(action)
         agent.observe(state, action, next_state, reward)
         agent.update()
@@ -22,13 +22,14 @@ def run_episode(env, agent):
         state = next_state
         done = terminated or truncated
         count += 1
-
     return count
 
 # run 100 episodes and plot the duration of each in a scatter plot
-durations = [run_episode(env, agent) for _ in range(100)]
+durations = [episode_time(env, agent) for _ in range(100)]
 import matplotlib.pyplot as plt
 plt.scatter(range(100), durations)
+plt.xlabel('Episode')
+plt.ylabel('Duration')
 plt.show()
 
 
