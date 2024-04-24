@@ -20,7 +20,6 @@ def episode_time(env, agent):
         agent.observe(state, action, next_state, reward)
         agent.update()
 
-
         episode_reward += reward
         state = next_state
         count += 1
@@ -30,7 +29,6 @@ def episode_time(env, agent):
 n_eps = 10
 durations = [episode_time(env, agent_dqn) for _ in range(n_eps)]
 import matplotlib.pyplot as plt
-print(len(durations))
 plt.scatter(range(n_eps), durations)
 plt.xlabel('Episode')
 plt.ylabel('Duration')

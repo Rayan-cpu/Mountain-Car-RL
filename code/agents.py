@@ -2,16 +2,36 @@ import random
 import torch 
 import torch.nn as nn
 import numpy as np
+from abc import ABC, abstractmethod
 
-class RandomAgent:
+class Agent(ABC):
+    # Abstract base class for all agents, defines the mandatory methods.
+    @abstractmethod
+    def observe(self, state, action, next_state, reward):
+        pass
+
+    @abstractmethod
+    def select_action(self, state):
+        pass
+
+    @abstractmethod
+    def update(self):
+        pass
+
+    def init_actions(self):
+        return [0,1,2] # we can move left, stay or move right
+
+
+class RandomAgent(Agent):
     def __init__(self):
-        self.actions = [0,1,2] # we can move left, stay or move right
+        self.actions = self.init_actions()
         pass
 
     def observe(self, state, action, next_state, reward):
         pass
 
-    def select_action(self, state): # no access to the environment as there will be no illegal actions
+    def select_action(self, state): 
+        # no access to the environment as there will be no illegal actions
         return random.choice( self.actions )
 
     def update(self):
@@ -35,8 +55,9 @@ class MLP( nn.Module ):
         return logits
 
 
-class DQNAgent :
+class DQNAgent(Agent) :
     def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=10000, batch_size=64, optimizer='adam'):
+        self.actions = self.init_actions()
         self.eps_start = epsilon # will then decay exponentially to reach 0.05
         self.eps_end = 0.05 # asymptotic value for epsilon
         self.eps_tau = 1000 # characteristic time for the decay
@@ -44,7 +65,6 @@ class DQNAgent :
         self.replay_buffer = torch.zeros( [buffer_len, 6] ) # (x,v, action, reward, x',v')
         self.buffer_len = buffer_len
         self.iter = 0
-        self.actions = [0,1,2]
         self.batch_size = batch_size
         self.Qs = MLP( 2, len(self.actions) )
         if optimizer == 'adam':

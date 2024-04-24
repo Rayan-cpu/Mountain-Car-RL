@@ -24,7 +24,6 @@ Use `conda env export > requirements.yml` to update the requirements and `conda 
   * if yes, does that require a deep copy ? (to avoid sharing the gradients and the optimiser ?)
 *  "run for 1000 episodes and report its loss and average cumulative reward per episode"
    *  loss per episode over the episodes ? (to track reduction ?)
-      *  this would require to have access to weather the episode is done or not : can we add a "bool done" argument to the update() function to compute the average over the episode ?  
+      *  this would require to have access to weather the episode is done or not : can we add a "bool done" argument to the update() function to compute the average over the episode ? -> otherwise can add "return_loss argument" and deal with computations in the episode loop
    *  average cumulative reward per episode -> as in scalar : the average over the episodes ? (to answer "do we on avg. get to the 100 ?") 
-* should we use an agent class and then inherit from it ? (or are we expected to just duplicate ?)
 
