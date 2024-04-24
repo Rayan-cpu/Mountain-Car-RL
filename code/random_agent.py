@@ -5,7 +5,7 @@ import numpy as np
 env = gym.make('MountainCar-v0', render_mode='rgb_array')
 state, info = env.reset()
 agent = agents.RandomAgent()
-
+agent_dqn = agents.DQNAgent()
 
 def episode_time(env, agent):
     state, info = env.reset()
@@ -15,19 +15,23 @@ def episode_time(env, agent):
     while not done:
         action = agent.select_action(state) 
         next_state, reward, terminated, truncated, _ = env.step(action)
+        done = terminated or truncated
+
         agent.observe(state, action, next_state, reward)
         agent.update()
 
+
         episode_reward += reward
         state = next_state
-        done = terminated or truncated
         count += 1
     return count
 
 # run 100 episodes and plot the duration of each in a scatter plot
-durations = [episode_time(env, agent) for _ in range(100)]
+n_eps = 10
+durations = [episode_time(env, agent_dqn) for _ in range(n_eps)]
 import matplotlib.pyplot as plt
-plt.scatter(range(100), durations)
+print(len(durations))
+plt.scatter(range(n_eps), durations)
 plt.xlabel('Episode')
 plt.ylabel('Duration')
 plt.show()
