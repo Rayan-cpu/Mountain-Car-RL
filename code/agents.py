@@ -65,6 +65,7 @@ class DQNAgent(Agent) :
         self.replay_buffer = torch.zeros( [buffer_len, 6] ) # (x,v, action, reward, x',v')
         self.buffer_len = buffer_len
         self.iter = 0
+        self.ep_loss = 0. # loss for the current episode
         self.batch_size = batch_size
         self.Qs = MLP( 2, len(self.actions) )
         if optimizer == 'adam':
@@ -123,26 +124,30 @@ class DQNAgent(Agent) :
         actions = batch[:,2].to( torch.int64 ) # to 
         return torch.mean( ( target - self.Qs(batch[:,0:2])[range(self.batch_size),actions] ) ** 2 )
     
-    def update( self ):
+    def update( self, done ):
         '''
         Train the model using a mini-batch from the replay buffer
         '''
         # first collect enough samples 
         if self.iter < self.buffer_len:
             return
-        
+
         self.Qs.train()
         batch_ind = random.sample( range(self.buffer_len), self.batch_size ) 
         batch = self.replay_buffer[batch_ind,:]
         loss = self.loss_fn( batch )
+        self.ep_loss += loss.item() 
 
         # Backpropagation
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
 
+        if done:
+            temp = self.ep_loss
+            self.ep_loss = 0. # reset the loss for the next episode
+            return temp
+        return
         #if batch % 100 == 0:
         #    loss, current = loss.item(), (batch + 1) * len(X)
             # print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-        return 
-    

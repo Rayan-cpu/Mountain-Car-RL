@@ -11,27 +11,48 @@ def episode_time(env, agent):
     state, info = env.reset()
     done = False
     episode_reward = 0
+    episode_loss = 0.
     count = 0
+    
     while not done:
         action = agent.select_action(state) 
         next_state, reward, terminated, truncated, _ = env.step(action)
         done = terminated or truncated
 
         agent.observe(state, action, next_state, reward)
-        agent.update()
+        if done :
+            episode_loss = agent.update( done=True )
+        else : 
+            agent.update( done=done )
 
         episode_reward += reward
+        #episode_loss += loss
         state = next_state
         count += 1
-    return count
+    return count, episode_reward, episode_loss
 
 # run 100 episodes and plot the duration of each in a scatter plot
-n_eps = 10
-durations = [episode_time(env, agent_dqn) for _ in range(n_eps)]
+n_eps = 100
+count = np.zeros(n_eps)
+episode_reward = np.zeros(n_eps)
+episode_loss = np.zeros(n_eps)
+for i in range(n_eps):
+    count[i], episode_reward[i], episode_loss[i] = episode_time(env, agent_dqn)
+
+
 import matplotlib.pyplot as plt
-plt.scatter(range(n_eps), durations)
+plt.scatter(range(n_eps), count)
 plt.xlabel('Episode')
 plt.ylabel('Duration')
+plt.figure()
+plt.scatter(range(n_eps), episode_reward)
+plt.xlabel('Episode')
+plt.ylabel('Reward')
+plt.figure()
+print(episode_loss)
+plt.scatter(range(n_eps), episode_loss)
+plt.xlabel('Episode')
+plt.ylabel('Loss')
 plt.show()
 
 
