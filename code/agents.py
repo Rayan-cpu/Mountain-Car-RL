@@ -79,7 +79,7 @@ class DQNAgent(Agent) :
         self.actions = self.init_actions()
         self.eps_start = epsilon # will then decay exponentially to reach 0.05
         self.eps_end = 0.05 # asymptotic value for epsilon
-        self.eps_tau = 1000 # characteristic time for the decay
+        self.eps_tau = 10000 # characteristic time for the decay
         self.gamma = gamma
         self.replay_buffer = torch.zeros( [buffer_len, 6] ) # (x,v, action, reward, x',v')
         self.buffer_len = buffer_len
@@ -89,11 +89,13 @@ class DQNAgent(Agent) :
         self.batch_size = batch_size
         self.heuristic = heuristic
         self.Qs = MLP( 2, len(self.actions) )
+        self.target_Qs = MLP( 2, len(self.actions) )
+        self.target_Qs.eval()
+        self.target_update_freq = 1000 # frequency to update target (in GD steps)
         if optimizer == 'adam':
-            self.optimizer = torch.optim.SGD(self.Qs.parameters(), lr=1e-3)
+            self.optimizer = torch.optim.Adam(self.Qs.parameters(), lr=1e-3)
         else:
             self.optimizer = torch.optim.SGD(self.Qs.parameters(), lr=1e-3)
-    # Qs is attribute of the agent
 
     def observe(self, state, action, next_state, reward):
         '''
@@ -103,9 +105,7 @@ class DQNAgent(Agent) :
         next_state : state of the environment after taking the action
         reward : reward received after taking the action
         '''
-        # pssible heuristics : they say location wise, if the agent is close to the goal, it should get a reward (can use right half of harmonic oscillator)
-        # how much info should be given : is goal to give minimal amount or is it to give as much as possible (to then use as baseline with no sparse reward)
-        if self.heuristic: # heuristic to speed up learning, can add reward proportional to the velocity (or position) -> can define continuous function scaled by parameter
+        if self.heuristic: 
             n = 1
             frac = 1.0e-1
             #print( self.auxiliar_r( batch, n, frac )/reward )
@@ -170,16 +170,24 @@ class DQNAgent(Agent) :
         is_on_right = batch[:,0] > x_start
         return frac * a * ( (batch[:,0]-x_start) ** n ) * is_on_right + torch.logical_not(is_on_right) * 0. # if the agent is on the left, the reward is 0
 
-    def loss_fn( self, batch ) :
+    def huber_loss( self, x, y ):
+        '''
+        Huber loss function : it is less sensitive to outliers than the mean squared error. 
+        x : tensor of predictions
+        y : tensor of targets
+        '''
+        diff = torch.abs( x - y )
+        return torch.mean( torch.where( diff < 1, 0.5 * diff ** 2, diff - 0.5 ) )
+
+    def loss_fn( self, batch, huber=True ) :
         '''
         Loss function for the Q-network : we only include part of it in the gradient descent.
         batch : mini-batch over which gradient is estimated
         '''
-        with torch.no_grad(): # r + gamma * max_a Q(s',a)
-            max = torch.max( self.Qs(batch[:,4:]), dim=1 ) 
-            reward = batch[:,3]
-            target = reward + self.gamma * max.values
+        target = batch[:,3] + self.gamma * torch.max( self.target_Qs(batch[:,4:]), dim=1 ).values
         actions = batch[:,2].to( torch.int64 ) # to 
+        if huber:
+            return self.huber_loss( self.Qs(batch[:,0:2])[range(self.batch_size),actions], target )
         return torch.mean( ( target - self.Qs(batch[:,0:2])[range(self.batch_size),actions] ) ** 2 )
     
     def update( self, done ):
@@ -208,6 +216,9 @@ class DQNAgent(Agent) :
             self.ep_loss = 0. # reset the loss for the next episode
             self.ep_reward = 0.
             return temp, ttemp
+        
+        if self.iter % self.target_update_freq == 0:
+            self.target_Qs.load_state_dict( self.Qs.state_dict() )        
         return
     
     def run_episode( self, env ):
