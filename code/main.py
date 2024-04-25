@@ -1,9 +1,13 @@
 import gymnasium as gym
 import agents 
 import numpy as np
+import matplotlib.pyplot as plt
+import h5py as h5
+
 
 fig_dir = '../figs/'
-
+output_dir = '../output/'
+output_file = 'dqn_agent'
 env = gym.make('MountainCar-v0')
 #env = gym.make('MountainCar-v0', render_mode='rgb_array')
 
@@ -11,34 +15,25 @@ agent = agents.RandomAgent()
 agent_dqn = agents.DQNAgent( heuristic=True )
 
 
-n_eps = 500
+n_eps = 1000
+sampling = n_eps // 20
 count = np.zeros(n_eps)
-episode_reward = np.zeros(n_eps)
-episode_loss = np.zeros(n_eps)
+norm_ep_env_reward = np.zeros(n_eps)
+norm_ep_aux_reward = np.zeros(n_eps)
+ep_loss = np.zeros(n_eps)
 
 for i in range(n_eps):
-    count[i], episode_reward[i], episode_loss[i] = agent_dqn.run_episode(env)
-    if i % 50 == 0:
+    count[i], norm_ep_env_reward[i], norm_ep_aux_reward[i], ep_loss[i] = agent_dqn.run_episode(env)
+    if i % sampling == 0:
         print(i/n_eps * 100 , '% done')
 
-
-import matplotlib.pyplot as plt
-plt.scatter(range(n_eps), count)
-plt.xlabel('Episode')
-plt.ylabel('Duration')
-plt.savefig( f'{fig_dir}dqn_duration.png')
-plt.figure()
-plt.scatter(range(n_eps), episode_reward)
-plt.xlabel('Episode')
-plt.ylabel('Reward')
-plt.savefig( f'{fig_dir}dqn_reward.png')
-plt.figure()
-print(episode_reward)
-plt.scatter(range(n_eps), episode_loss)
-plt.xlabel('Episode')
-plt.ylabel('Loss')
-plt.savefig( f'{fig_dir}dqn_loss.png')
-plt.show()
+# save the data to a .h5 file
+with h5.File(f'{output_dir}{output_file}.h5', 'w') as f:
+    f.create_dataset('eps', data=range(n_eps))
+    f.create_dataset('count', data=count)
+    f.create_dataset('norm_ep_env_reward', data=norm_ep_env_reward)
+    f.create_dataset('norm_ep_aux_reward', data=norm_ep_aux_reward)
+    f.create_dataset('ep_loss', data=ep_loss)
 
 
 '''

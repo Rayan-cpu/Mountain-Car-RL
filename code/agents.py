@@ -79,19 +79,20 @@ class DQNAgent(Agent) :
         self.actions = self.init_actions()
         self.eps_start = epsilon # will then decay exponentially to reach 0.05
         self.eps_end = 0.05 # asymptotic value for epsilon
-        self.eps_tau = 10000 # characteristic time for the decay
+        self.eps_tau = 20000 # characteristic time for the decay
         self.gamma = gamma
         self.replay_buffer = torch.zeros( [buffer_len, 6] ) # (x,v, action, reward, x',v')
         self.buffer_len = buffer_len
         self.iter = 0
         self.ep_loss = 0. # loss for the current episode
-        self.ep_reward = 0. # reward for the current episode
+        self.ep_env_reward = 0. # reward for the current episode 
+        self.ep_aux_reward = 0. # reward for the current episode 
         self.batch_size = batch_size
         self.heuristic = heuristic
         self.Qs = MLP( 2, len(self.actions) )
         self.target_Qs = MLP( 2, len(self.actions) )
         self.target_Qs.eval()
-        self.target_update_freq = 1000 # frequency to update target (in GD steps)
+        self.target_update_freq = 2000 # frequency to update target (in GD steps)
         if optimizer == 'adam':
             self.optimizer = torch.optim.Adam(self.Qs.parameters(), lr=1e-3)
         else:
@@ -105,10 +106,13 @@ class DQNAgent(Agent) :
         next_state : state of the environment after taking the action
         reward : reward received after taking the action
         '''
+        self.ep_env_reward += reward
+
         if self.heuristic: 
-            n = 1
+            n = 3
             frac = 1.0e-1
             #print( self.auxiliar_r( batch, n, frac )/reward )
+            self.ep_aux_reward += self.float_auxiliar_r( state[0], n, frac )
             reward += self.float_auxiliar_r( state[0], n, frac )
 
         # add to replay buffer 
@@ -197,13 +201,15 @@ class DQNAgent(Agent) :
         # first collect enough samples 
         if self.iter < self.buffer_len:
             return
+        if self.iter % self.target_update_freq == 0:
+            self.target_Qs.load_state_dict( self.Qs.state_dict() )
 
         self.Qs.train()
         batch_ind = random.sample( range(self.buffer_len), self.batch_size ) 
         batch = self.replay_buffer[batch_ind,:]
         loss = self.loss_fn( batch )
         self.ep_loss += loss.item()
-        self.ep_reward += torch.mean( batch[:,3] ).item()
+        #self.ep_env_reward += torch.mean( batch[:,3] ).item()
 
         # Backpropagation
         loss.backward()
@@ -211,21 +217,22 @@ class DQNAgent(Agent) :
         self.optimizer.zero_grad()
 
         if done:
-            temp = self.ep_loss
-            ttemp = self.ep_reward
+            ep_loss_ = self.ep_loss
+            ep_env_reward_ = self.ep_env_reward
+            ep_aux_reward_ = self.ep_aux_reward
             self.ep_loss = 0. # reset the loss for the next episode
-            self.ep_reward = 0.
-            return temp, ttemp
-        
-        if self.iter % self.target_update_freq == 0:
-            self.target_Qs.load_state_dict( self.Qs.state_dict() )        
+            self.ep_env_reward = 0.
+            self.ep_aux_reward = 0.
+            return ep_loss_, ep_env_reward_, ep_aux_reward_
+                
         return
     
     def run_episode( self, env ):
         state, info = env.reset()
         done = False
-        episode_reward = 0
-        episode_loss = 0.
+        ep_env_reward = 0
+        ep_aux_reward = 0
+        ep_loss = 0.
         count = 0
         
         while not done:
@@ -234,11 +241,11 @@ class DQNAgent(Agent) :
             done = terminated or truncated
 
             self.observe(state, action, next_state, reward)
-            if done and self.iter >= self.buffer_len:
-                episode_loss, episode_reward = self.update( done=done )
+            if done and self.iter > self.buffer_len:
+                ep_loss, ep_env_reward, ep_aux_reward = self.update( done=done )
             else : 
                 self.update( done=done )
 
             state = next_state
             count += 1
-        return count, episode_reward, episode_loss
+        return count, ep_env_reward/count, ep_aux_reward/count, ep_loss # duration, normalised cumulated reward, loss
