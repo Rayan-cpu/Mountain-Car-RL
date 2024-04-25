@@ -18,6 +18,10 @@ class Agent(ABC):
     def update(self):
         pass
 
+    @abstractmethod
+    def run_episode( self, env ):
+        pass
+
     def init_actions(self):
         return [0,1,2] # we can move left, stay or move right
 
@@ -36,6 +40,21 @@ class RandomAgent(Agent):
 
     def update(self):
         pass
+
+    def run_episode( self, env ):
+        state, info = env.reset()
+        done = False
+        count = 0
+        
+        while not done:
+            action = self.select_action(state) 
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            self.observe(state, action, next_state, reward)
+            state = next_state
+            
+            done = terminated or truncated
+            count += 1
+        return count
 
 
 # Multi layer perceptron class
@@ -56,7 +75,7 @@ class MLP( nn.Module ):
 
 
 class DQNAgent(Agent) :
-    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=10000, batch_size=64, optimizer='adam'):
+    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=10000, batch_size=64, optimizer='adam', heuristic=False):
         self.actions = self.init_actions()
         self.eps_start = epsilon # will then decay exponentially to reach 0.05
         self.eps_end = 0.05 # asymptotic value for epsilon
@@ -66,7 +85,9 @@ class DQNAgent(Agent) :
         self.buffer_len = buffer_len
         self.iter = 0
         self.ep_loss = 0. # loss for the current episode
+        self.ep_reward = 0. # reward for the current episode
         self.batch_size = batch_size
+        self.heuristic = heuristic
         self.Qs = MLP( 2, len(self.actions) )
         if optimizer == 'adam':
             self.optimizer = torch.optim.SGD(self.Qs.parameters(), lr=1e-3)
@@ -82,6 +103,14 @@ class DQNAgent(Agent) :
         next_state : state of the environment after taking the action
         reward : reward received after taking the action
         '''
+        # pssible heuristics : they say location wise, if the agent is close to the goal, it should get a reward (can use right half of harmonic oscillator)
+        # how much info should be given : is goal to give minimal amount or is it to give as much as possible (to then use as baseline with no sparse reward)
+        if self.heuristic: # heuristic to speed up learning, can add reward proportional to the velocity (or position) -> can define continuous function scaled by parameter
+            n = 1
+            frac = 1.0e-1
+            #print( self.auxiliar_r( batch, n, frac )/reward )
+            reward += self.float_auxiliar_r( state[0], n, frac )
+
         # add to replay buffer 
         sample = torch.cat( [torch.tensor(state), torch.tensor([action]), torch.tensor([reward]) , torch.tensor(next_state)] )
 
@@ -90,7 +119,7 @@ class DQNAgent(Agent) :
             self.iter += 1
             return
         
-        self.replay_buffer = torch.roll( self.replay_buffer, -1 ) # replace oldest sample 
+        self.replay_buffer = torch.roll( self.replay_buffer, -1, dims=0 ) # replace oldest sample 
         self.replay_buffer[-1,:] = sample                         # with the new one
         self.iter += 1
         return
@@ -113,6 +142,34 @@ class DQNAgent(Agent) :
             action_index = torch.argmax( self.Qs(torch.tensor(state)) )
             return self.actions[action_index]
 
+    def float_auxiliar_r( self, x, n, frac ):
+        '''
+        Return the auxiliary reward for the Q-network : the reward grows as x^n as the agent gets closer to the goal. It is equal to 100 (the reward for reaching the goal) when the agent is at the goal.
+        batch : mini-batch over which the reward is computed
+        n : power of the polynomial
+        frac : fraction of the goal reward that is given to the agent
+        '''
+        max_reward = 100
+        x_reward = 0.5
+        x_start = -0.5
+        a = max_reward / ( x_reward - x_start ) ** n
+        is_on_right = x > x_start
+        return frac * a * ( (x-x_start) ** n ) * is_on_right + (1-is_on_right) * 0. # if the agent is on the left, the reward is 0
+    
+    def auxiliar_r( self, batch, n, frac ):
+        '''
+        Return the auxiliary reward for the Q-network : the reward grows as x^n as the agent gets closer to the goal. It is equal to 100 (the reward for reaching the goal) when the agent is at the goal.
+        batch : mini-batch over which the reward is computed
+        n : power of the polynomial
+        frac : fraction of the goal reward that is given to the agent
+        '''
+        max_reward = 100
+        x_reward = 0.5
+        x_start = -0.5
+        a = max_reward / ( x_reward - x_start ) ** n
+        is_on_right = batch[:,0] > x_start
+        return frac * a * ( (batch[:,0]-x_start) ** n ) * is_on_right + torch.logical_not(is_on_right) * 0. # if the agent is on the left, the reward is 0
+
     def loss_fn( self, batch ) :
         '''
         Loss function for the Q-network : we only include part of it in the gradient descent.
@@ -120,7 +177,8 @@ class DQNAgent(Agent) :
         '''
         with torch.no_grad(): # r + gamma * max_a Q(s',a)
             max = torch.max( self.Qs(batch[:,4:]), dim=1 ) 
-            target = batch[:,3] + self.gamma * max.values
+            reward = batch[:,3]
+            target = reward + self.gamma * max.values
         actions = batch[:,2].to( torch.int64 ) # to 
         return torch.mean( ( target - self.Qs(batch[:,0:2])[range(self.batch_size),actions] ) ** 2 )
     
@@ -136,7 +194,8 @@ class DQNAgent(Agent) :
         batch_ind = random.sample( range(self.buffer_len), self.batch_size ) 
         batch = self.replay_buffer[batch_ind,:]
         loss = self.loss_fn( batch )
-        self.ep_loss += loss.item() 
+        self.ep_loss += loss.item()
+        self.ep_reward += torch.mean( batch[:,3] ).item()
 
         # Backpropagation
         loss.backward()
@@ -145,9 +204,30 @@ class DQNAgent(Agent) :
 
         if done:
             temp = self.ep_loss
+            ttemp = self.ep_reward
             self.ep_loss = 0. # reset the loss for the next episode
-            return temp
+            self.ep_reward = 0.
+            return temp, ttemp
         return
-        #if batch % 100 == 0:
-        #    loss, current = loss.item(), (batch + 1) * len(X)
-            # print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+    
+    def run_episode( self, env ):
+        state, info = env.reset()
+        done = False
+        episode_reward = 0
+        episode_loss = 0.
+        count = 0
+        
+        while not done:
+            action = self.select_action(state) 
+            next_state, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
+
+            self.observe(state, action, next_state, reward)
+            if done and self.iter >= self.buffer_len:
+                episode_loss, episode_reward = self.update( done=done )
+            else : 
+                self.update( done=done )
+
+            state = next_state
+            count += 1
+        return count, episode_reward, episode_loss
