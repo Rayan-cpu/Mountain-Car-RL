@@ -14,20 +14,38 @@ with h5.File(f'{output_dir}{filename}.h5', 'r') as f:
     norm_ep_aux_reward = f['norm_ep_aux_reward'][:]
     ep_loss = f['ep_loss'][:]
 
-plt.scatter(eps, count)
-plt.xlabel('Episode')
-plt.ylabel('Duration')
-plt.savefig( f'{fig_dir}dqn_duration.png')
+
+def get_successes( counts ):
+    result = np.zeros(len(counts))
+    result = counts < 200
+    return np.cumsum(result)
+
+smoothing = 10 # to smooth the rewards
+norm_ep_env_reward = np.convolve(norm_ep_env_reward, np.ones(smoothing)/smoothing, mode='valid')
+norm_ep_aux_reward = np.convolve(norm_ep_aux_reward, np.ones(smoothing)/smoothing, mode='valid')
+ep_loss = np.convolve(ep_loss, np.ones(smoothing)/smoothing, mode='valid')
+
+fig, ax = plt.subplots( 2, 1, figsize=(6, 10), sharex=True )
+ax[0].scatter(eps, count)
+ax[0].set_ylabel('Duration')
+# plot the cumulative sum of the successes
+successes = get_successes( count )
+ax[1].scatter(range(len(successes)), successes)
+ax[1].set_xlabel('Episode')
+ax[1].set_ylabel('Successes by then')
+plt.savefig( f'{fig_dir}dqn_duration.png' )
 plt.figure()
-plt.scatter(eps, norm_ep_env_reward, label='Environment')
-plt.scatter(eps, norm_ep_aux_reward, label='Auxiliary')
-plt.scatter(eps, norm_ep_env_reward + norm_ep_aux_reward, label='Total')
+# will sizes match ?
+plt.plot(norm_ep_env_reward, label='Environment')
+plt.plot(norm_ep_aux_reward, label='Auxiliary')
+plt.plot(norm_ep_env_reward + norm_ep_aux_reward, label='Total')
 plt.xlabel('Episode')
+plt.legend()
 plt.ylabel('Reward')
 plt.savefig( f'{fig_dir}dqn_reward.png')
 plt.figure()
-plt.scatter(eps, ep_loss)
+plt.plot(ep_loss)
 plt.xlabel('Episode')
 plt.ylabel('Loss')
 plt.savefig( f'{fig_dir}dqn_loss.png')
-plt.show()
+#plt.show()

@@ -243,6 +243,7 @@ class DQNAgent(Agent) :
             self.observe(state, action, next_state, reward)
             if done and self.iter > self.buffer_len:
                 ep_loss, ep_env_reward, ep_aux_reward = self.update( done=done )
+                #ep_aux_reward += 100. # reward for reaching the goal, not added by 
             else : 
                 self.update( done=done )
 
