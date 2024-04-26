@@ -27,4 +27,16 @@ Use `conda env export > requirements.yml` to update the requirements and `conda 
   * could in principle use criterion based on velocity, right ? might be harder to scale ? (as no real clue of characteristic velocities)
 * currently not converging
   * normal that loss does not decrease ? should we fist have finished exploring ?
-* 
+* question about normalisation 
+  * state-normalisation
+    * normalised deviance from the mean quantifies deviance (so param of interest, as should affect reward)
+    * makes sure that this quantity is of right scale for NN input (in general would want to have the right order) -> but then why not the in Q net ? can't scale the environement to gain stability ?
+  * reward-normalisation
+    * to fix a scale for the auxiliary reward (otherwise could be centered at whatever value) (clamping is there for problems in heavy tail distributions ?)
+  * over what should we normalise 
+    * can use whole buffer
+      * can do it for no extra expense by computing an update rule 
+      * they say not to compute at "few initial steps" but can wait until buffer is full 
+        * but then its effect will kick in later : if do it early will get a more diversified buffer and avoid re-exploration later  
+    * can use batch 
+    * ... 

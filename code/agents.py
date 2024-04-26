@@ -91,6 +91,10 @@ class DQNAgent(Agent) :
         self.heuristic = heuristic
         self.Qs = MLP( 2, len(self.actions) )
         self.target_Qs = MLP( 2, len(self.actions) )
+        self.RND = MLP( 2, 1 )
+        self.RND_target = MLP( 2, 1 )
+        self.RND_optimizer = torch.optim.Adam(self.RND.parameters(), lr=1e-3)
+        self.RND_target.eval()
         self.target_Qs.eval()
         self.target_update_freq = 2000 # frequency to update target (in GD steps)
         if optimizer == 'adam':
@@ -208,6 +212,7 @@ class DQNAgent(Agent) :
         batch_ind = random.sample( range(self.buffer_len), self.batch_size ) 
         batch = self.replay_buffer[batch_ind,:]
         loss = self.loss_fn( batch )
+        RND_loss = torch.mean( ( self.RND_target(batch[:,0:2]) - self.RND(batch[:,0:2]) )**2 )
         self.ep_loss += loss.item()
         #self.ep_env_reward += torch.mean( batch[:,3] ).item()
 
@@ -215,6 +220,9 @@ class DQNAgent(Agent) :
         loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
+        RND_loss.backward()
+        self.RND_optimizer.step()
+        self.RND_optimizer.zero_grad()
 
         if done:
             ep_loss_ = self.ep_loss
