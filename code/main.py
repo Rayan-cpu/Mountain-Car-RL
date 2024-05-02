@@ -1,7 +1,6 @@
 import gymnasium as gym
 import agents 
 import numpy as np
-import matplotlib.pyplot as plt
 import h5py as h5
 
 
@@ -12,10 +11,11 @@ env = gym.make('MountainCar-v0')
 #env = gym.make('MountainCar-v0', render_mode='rgb_array')
 
 agent = agents.RandomAgent()
-agent_dqn = agents.DQNAgent( heuristic=True )
+#agent_dqn = agents.DQNAgentHeuristic( degree=3, frac=1.e-1 )
+agent_dqn = agents.DQNAgentRND( reward_factor=1.0 )
 
 
-n_eps = 1000
+n_eps = 100
 sampling = n_eps // 20
 count = np.zeros(n_eps)
 norm_ep_env_reward = np.zeros(n_eps)
