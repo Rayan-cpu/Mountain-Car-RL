@@ -25,14 +25,15 @@ Use `conda env export > requirements.yml` to update the requirements and `conda 
 * heuristics : they say location wise (can use growing function towards reward, with relative scale)
   * how much info should be given ? Is goal to give minimal amount or is it to give as much as possible (to then use as baseline with no sparse reward) ?
   * could in principle use criterion based on velocity, right ? might be harder to scale ? (as no real clue of characteristic velocities)
-* currently not converging
-  * normal that loss does not decrease ? should we fist have finished exploring ?
 * question about normalisation 
   * state-normalisation
     * normalised deviance from the mean quantifies deviance (so param of interest, as should affect reward)
+      * yes
     * makes sure that this quantity is of right scale for NN input (in general would want to have the right order) -> but then why not the in Q net ? can't scale the environement to gain stability ?
+      * 
   * reward-normalisation
-    * to fix a scale for the auxiliary reward (otherwise could be centered at whatever value) (clamping is there for problems in heavy tail distributions ?)
+    * to fix a scale for the auxiliary reward (otherwise could be centered at whatever value, yes) (clamping is there for problems in heavy tail distributions ?)
+    * because also needs to avoid getting free reward ("otherwise won't stop acting that way ??")
   * over what should we normalise 
     * can use whole buffer
       * can do it for no extra expense by computing an update rule 
