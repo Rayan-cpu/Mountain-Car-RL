@@ -44,7 +44,7 @@ class RandomAgent(Agent):
     def run_episode( self, env ):
         state, info = env.reset()
         done = False
-        count = 0
+        duration = 0
         
         while not done:
             action = self.select_action(state) 
@@ -53,8 +53,8 @@ class RandomAgent(Agent):
             state = next_state
             
             done = terminated or truncated
-            count += 1
-        return count
+            duration += 1
+        return duration
 
 
 class DQNAgent(Agent) :
@@ -190,7 +190,7 @@ class DQNAgent(Agent) :
         ep_env_reward = 0
         ep_aux_reward = 0
         ep_loss = 0.
-        count = 0
+        duration = 0
         
         while not done:
             action = self.select_action(state) 
@@ -205,8 +205,8 @@ class DQNAgent(Agent) :
                 self.update( done=done )
 
             state = next_state
-            count += 1
-        return count, ep_env_reward/count, ep_aux_reward/count, ep_loss # duration, normalised cumulated reward, loss
+            duration += 1
+        return duration, ep_env_reward/duration, ep_aux_reward/duration, ep_loss # duration, normalised cumulated reward, loss
 
 class DQNAgentHeuristic(DQNAgent):
     def __init__(self, degree=3, frac=1.0-1, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
