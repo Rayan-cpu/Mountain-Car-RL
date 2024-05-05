@@ -1,0 +1,7 @@
+Database:
+  db_host: localhost
+  db_name: example_db
+  db_port: 5432
+General:
+  debug: true
+  log_level: info

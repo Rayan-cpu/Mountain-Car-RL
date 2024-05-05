@@ -1,4 +1,15 @@
 # %%
+import yaml
+
+with open('../configs/test.yml', 'r') as file:
+    prime_service = yaml.safe_load(file)
+
+print( prime_service )
+
+with open('../configs/w_test.yaml', 'w') as file:
+    yaml.dump(prime_service, file)
+
+# %%
 import matplotlib.pyplot as plt
 import numpy as np
 
