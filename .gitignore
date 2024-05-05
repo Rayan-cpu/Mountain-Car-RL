@@ -1,2 +1,8 @@
 .ipynb_checkpoints
 *.pytest_cache
+*.aux
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz

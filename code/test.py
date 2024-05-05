@@ -1,16 +1,33 @@
-import torch
-from torch.autograd import Variable
+# %%
+import matplotlib.pyplot as plt
+import numpy as np
 
-class person : 
+def float_auxiliar_r(degree, frac, x):
+    max_reward = 100
+    x_reward = 0.5
+    x_start = -0.5
+    a = max_reward / ( x_reward - x_start ) ** degree
+    is_on_right = x > x_start
+    # if the agent is on the left, the reward is 0
+    return frac * a * ( (x-x_start) ** degree ) * is_on_right + (1-is_on_right) * 0. 
 
-    def __init__(self,name) -> None:
-        self.name = name
-        pass
-    age = 10
+# %%
 
-jon = person("jon")
-print(jon.name, jon.age)
-
+x_left = -1.2
+x_right = 0.6
+x_start = -0.5
+n_points = 500
+x = np.linspace(x_left, x_right, n_points)
+degree = np.arange(1,5,1)
+frac = 1.e-0
+for d in degree:
+    y = float_auxiliar_r(d, frac, x)
+    plt.plot(x, y, label=f'degree={d}')
+plt.axvline(x=x_start, color='k', linestyle='--')
+plt.xlabel('x')
+plt.legend()
+plt.ylabel('Reward')
+plt.show()
 
 '''
 def auxiliar_r( self, batch, n, frac ):

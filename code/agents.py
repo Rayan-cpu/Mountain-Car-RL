@@ -3,7 +3,8 @@ import torch
 import numpy as np
 from abc import ABC, abstractmethod
 from utility import MLP, ReplayBuffer
-torch.autograd.set_detect_anomaly(True)
+#torch.autograd.set_detect_anomaly(True) # this is to get more info about 
+# problem with autograd ( it 10x the computation time tho :/ )
 
 class Agent(ABC):
     # Abstract base class for all agents, defines the mandatory methods.
@@ -57,7 +58,7 @@ class RandomAgent(Agent):
 
 
 class DQNAgent(Agent) :
-    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0):
+    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
         self.eps_start = epsilon # will then decay exponentially to eps_end
         self.eps_end = 0.05 # asymptotic value for epsilon
         self.eps_tau = 100*self.full_ep_len # characteristic time for the decay
@@ -78,6 +79,7 @@ class DQNAgent(Agent) :
         self.target_Qs_update_freq = 2000 # frequency to update target (in GD steps)
         self.pre_train_steps = pre_train_steps # number of GD steps on which to 
         # train the auxiliary reward before starting the DQN training
+        self.update_period = update_period
     
     @abstractmethod
     def float_auxiliar_r(self, state, next_state):
@@ -156,11 +158,13 @@ class DQNAgent(Agent) :
         if self.iter % self.target_Qs_update_freq == 0:
             self.target_Qs.load_state_dict( self.Qs.state_dict() )
 
+
         batch = self.buffer.new_batch( self.batch_size )
         self.sub_update( batch )
 
         # train the Q-network once the RND network is good enough
-        if self.iter > self.buffer.len + self.pre_train_steps + 1:
+        temp = self.buffer.len + self.pre_train_steps + 1
+        if self.iter > temp and self.iter % self.update_period == 0:
             self.Qs.train()
             loss = self.loss_fn( batch )
             self.ep_loss += loss.item()
@@ -196,7 +200,7 @@ class DQNAgent(Agent) :
             self.observe(state, action, next_state, reward)
             if done and self.iter > self.buffer.len:
                 ep_loss, ep_env_reward, ep_aux_reward = self.update( done=done )
-                ep_aux_reward += 100. # reward for reaching the goal, not added by 
+                ep_env_reward += 100. # reward for reaching the goal, not added by  the environment (should actually be added to ep_env_reward, no ??)
             else : 
                 self.update( done=done )
 
@@ -205,8 +209,8 @@ class DQNAgent(Agent) :
         return count, ep_env_reward/count, ep_aux_reward/count, ep_loss # duration, normalised cumulated reward, loss
 
 class DQNAgentHeuristic(DQNAgent):
-    def __init__(self, degree=3, frac=1.0-1, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0):
-        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps)
+    def __init__(self, degree=3, frac=1.0-1, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
+        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps, update_period)
         self.frac = frac
         self.degree = degree
 
@@ -232,7 +236,7 @@ class DQNAgentHeuristic(DQNAgent):
         return self.frac * a * ( (x-x_start) ** self.degree ) * is_on_right + (1-is_on_right) * 0. # if the agent is on the left, the reward is 0
 
 class DQNAgentRND(DQNAgent) :
-    def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=1000):
+    def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=200):
         super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps=pre_train_steps)
         self.RND = MLP( 2, 1 )
         self.RND_optimizer = torch.optim.Adam(self.RND.parameters(), lr=1e-3)
@@ -264,12 +268,14 @@ class DQNAgentRND(DQNAgent) :
             #self.train_index += 1
             #return
 
-        self.RND.train()
-        RND_loss = torch.mean( ( self.RND_target(batch[:,4:]) - self.RND(batch[:,4:]) ) **2 )
-        RND_loss.backward()
-        self.RND_optimizer.step()
-        self.RND_optimizer.zero_grad()
-        self.train_index += 1
+        # check if this makes sense ???
+        if self.index % self.update_period == 0 : 
+            self.RND.train()
+            RND_loss = torch.mean( ( self.RND_target(batch[:,4:]) - self.RND(batch[:,4:]) ) **2 )
+            RND_loss.backward()
+            self.RND_optimizer.step()
+            self.RND_optimizer.zero_grad()
+            self.train_index += 1
 
     def float_auxiliar_r(self, state, next_state):
         if self.train_index < self.pre_train_steps:

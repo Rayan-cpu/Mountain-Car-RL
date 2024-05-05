@@ -2,17 +2,17 @@ import gymnasium as gym
 import agents 
 import numpy as np
 import h5py as h5
-
+import time
 
 fig_dir = '../figs/'
 output_dir = '../output/'
-output_file = 'dqn_rnd_agent'
+output_file = 'dqn_heuristic_agent_update_period_3_long'
 env = gym.make('MountainCar-v0')
 #env = gym.make('MountainCar-v0', render_mode='rgb_array')
 
 agent = agents.RandomAgent()
-#agent_dqn = agents.DQNAgentHeuristic( degree=3, frac=1.e-1 )
-agent_dqn = agents.DQNAgentRND( reward_factor=1.0, pre_train_steps=1000 )
+agent_dqn = agents.DQNAgentHeuristic( degree=3, frac=1.e-1, update_period=3 )
+#agent_dqn = agents.DQNAgentRND( reward_factor=1.0, pre_train_steps=1000 )
 
 
 n_eps = 1000
@@ -22,10 +22,15 @@ norm_ep_env_reward = np.zeros(n_eps)
 norm_ep_aux_reward = np.zeros(n_eps)
 ep_loss = np.zeros(n_eps)
 
+# start timer
+start = time.time()
 for i in range(n_eps):
     count[i], norm_ep_env_reward[i], norm_ep_aux_reward[i], ep_loss[i] = agent_dqn.run_episode(env)
     if i % sampling == 0:
         print(i/n_eps * 100 , '% done')
+# end timer
+end = time.time()
+print(f'Time elapsed: {end-start} s')
 
 # save the data to a .h5 file
 with h5.File(f'{output_dir}{output_file}.h5', 'w') as f:
