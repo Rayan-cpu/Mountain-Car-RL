@@ -206,8 +206,8 @@ class DQNAgent(Agent) :
 
             state = next_state
             results['duration'] += 1
-        results['ep_aux_reward'] /= results['duration']
-        results['ep_env_reward'] /= results['duration']
+        results['ep_aux_reward'] = results['duration']
+        results['ep_env_reward'] = results['duration']
         return results
 
 class DQNAgentHeuristic(DQNAgent):
