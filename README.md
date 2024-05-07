@@ -4,6 +4,9 @@
 ## Set up Conda environement
 Use `conda env export > requirements.yml` to update the requirements and `conda env create -f requirements.yml` to create the associated environment on a new machine. I you just want to update to the new version of the environment, use `conda env update -f requirements.yml --prune`.  
 
+## Run training run
+Create a configuration file from the template in the `..\configs` folder. Choose the associated parameters for the run. Run the `python main.py -f ..\configs\<config-name>.yml` command from the `\code` folder. The used configuration file along with the results (training metrics and figures) will be in the `..\runs\<run_name>` folder. 
+
 ## Implementation details 
 * handling gradients 
   * they are set to zero after each update

@@ -22,7 +22,7 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def run_episode( self, env ):
+    def run_episode( self, env ) -> dict:
         pass
 
     actions = [0,1,2] # we can move left, stay or move right (same across all agents)
@@ -44,7 +44,7 @@ class RandomAgent(Agent):
     def run_episode( self, env ):
         state, info = env.reset()
         done = False
-        duration = 0
+        results = {'duration' : 0}
         
         while not done:
             action = self.select_action(state) 
@@ -53,8 +53,8 @@ class RandomAgent(Agent):
             state = next_state
             
             done = terminated or truncated
-            duration += 1
-        return duration
+            results['duration'] += 1
+        return results
 
 
 class DQNAgent(Agent) :
@@ -187,10 +187,10 @@ class DQNAgent(Agent) :
     def run_episode( self, env ):
         state, info = env.reset()
         done = False
-        ep_env_reward = 0
-        ep_aux_reward = 0
-        ep_loss = 0.
-        duration = 0
+        results = {'duration' : 0}
+        results['ep_env_reward'] = 0
+        results['ep_aux_reward'] = 0
+        results['ep_loss'] = 0.
         
         while not done:
             action = self.select_action(state) 
@@ -199,14 +199,16 @@ class DQNAgent(Agent) :
 
             self.observe(state, action, next_state, reward)
             if done and self.iter > self.buffer.len:
-                ep_loss, ep_env_reward, ep_aux_reward = self.update( done=done )
-                ep_env_reward += 100. # reward for reaching the goal, not added by  the environment (should actually be added to ep_env_reward, no ??)
+                results['ep_loss'], results['ep_env_reward'], results['ep_aux_reward'] = self.update( done=done )
+                #ep_env_reward += 100. this is only in the continuous version of the environment, here we consider the discrete one ! (in all cases we should not add this if we truncated !)
             else : 
                 self.update( done=done )
 
             state = next_state
-            duration += 1
-        return duration, ep_env_reward/duration, ep_aux_reward/duration, ep_loss # duration, normalised cumulated reward, loss
+            results['duration'] += 1
+        results['ep_aux_reward'] /= results['duration']
+        results['ep_env_reward'] /= results['duration']
+        return results
 
 class DQNAgentHeuristic(DQNAgent):
     def __init__(self, degree=3, frac=1.0-1, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
@@ -236,8 +238,8 @@ class DQNAgentHeuristic(DQNAgent):
         return self.frac * a * ( (x-x_start) ** self.degree ) * is_on_right + (1-is_on_right) * 0. # if the agent is on the left, the reward is 0
 
 class DQNAgentRND(DQNAgent) :
-    def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=200):
-        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps=pre_train_steps)
+    def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=100, update_period=1):
+        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps=pre_train_steps, update_period=update_period)
         self.RND = MLP( 2, 1 )
         self.RND_optimizer = torch.optim.Adam(self.RND.parameters(), lr=1e-3)
         self.RND_target = MLP( 2, 1 )
@@ -257,19 +259,13 @@ class DQNAgentRND(DQNAgent) :
             self.RND.eval()
             buffer_reward = ( self.RND(self.buffer.values[:,4:]) - \
                         self.RND_target(self.buffer.values[:,4:]) ) ** 2
-            self.reward_mean = torch.mean( buffer_reward )
-            self.reward_var = torch.var( buffer_reward ) 
+            self.reward_mean = np.mean( buffer_reward.detach().numpy() )
+            self.reward_var = np.var( buffer_reward.detach().numpy() ) 
             
-            # the goal of this part was to add the auxiliary rewards to the buffer so 
-            # that the agent can learn from them. However, this led to an error.
-            # norm_reward = ( buffer_reward - self.reward_mean ) / torch.sqrt(self.reward_var)
-            # self.buffer.values[:,3] = self.buffer.values[:,3] + self.reward_factor * torch.clamp( norm_reward, -5, 5 ).reshape(-1)
-            # line above causes error as when calling backward(), the autodiff will notice that the variable changed value (as batch will have changed through the buffer)
-            #self.train_index += 1
-            #return
+            # adding the auxiliary rewards to the buffer so that the agent can learn from them led to an error when calling backward(). The autodiff notices that the variable changed value (as batch will have changed through the buffer). Since training time >> buffer update time, no solution to this was found.
 
         # check if this makes sense ???
-        if self.index % self.update_period == 0 : 
+        if self.train_index % self.update_period == 0 : 
             self.RND.train()
             RND_loss = torch.mean( ( self.RND_target(batch[:,4:]) - self.RND(batch[:,4:]) ) **2 )
             RND_loss.backward()
@@ -283,7 +279,7 @@ class DQNAgentRND(DQNAgent) :
         next_state_tensor = torch.tensor(next_state)
         self.RND.eval()
         reward = ( self.RND(next_state_tensor) - self.RND_target(next_state_tensor) ) ** 2
-        norm_reward = ( reward - self.reward_mean ) / np.torch(self.reward_var)
+        norm_reward = ( reward - self.reward_mean ) / np.sqrt(self.reward_var)
         self.reward_mean = (self.reward_mean * self.train_index + reward.item()) / (self.train_index + 1)
         self.reward_var = (self.reward_var * self.train_index + (reward.item() - self.reward_mean) ** 2) \
                             / (self.train_index + 1)

@@ -1,19 +1,18 @@
 General : 
   agent_type : dqn_heuristic # dqn_vanilla, dqn_heuristic, dqn_rnd, random, dyna
-  n_eps : 30
+  n_episodes : 1000
 
 Files :
-  out_dir : ../runs
-  out_file : dqn_heuristic_d=2_r=0.1
+  runs_dir : ../runs
 
 DQN : 
-  update_tau : 3
+  Qs_update_period : 3
 
 Dyna : 
 
 Heuristic :
-  degree : 2
-  reward_scale : 0.1
+  degree : 3
+  reward_scale : 0.02
 
 RND : 
   reward_factor : 0.1
