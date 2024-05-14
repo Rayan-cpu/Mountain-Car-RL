@@ -56,6 +56,8 @@ class RandomAgent(Agent):
             results['duration'] += 1
         return results
 
+class DynaAgent(Agent):
+    pass
 
 class DQNAgent(Agent) :
     def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):

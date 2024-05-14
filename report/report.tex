@@ -83,4 +83,12 @@
             * right size ?
             * crude scale : over an episode the rewards should be comparable ?? 
             * 
+            * handling gradients 
+            * they are set to zero after each update
+            * we use target network to only include part of the loss in the differenciation 
+          * dataloaders are usually used for training (to shuffle data and create batches)
+            * can't add samples to it, and should not re-define it from scratch 
+              * we just keep a list instead, sampling with random indices 
+          * we only start training once the replay buffer is full 
+          * implementation of target net was done with help of chat gpt (command to import the weights from another net)
 \end{document}
