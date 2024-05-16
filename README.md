@@ -1,7 +1,7 @@
 # Read me 
 
 ## Set up Conda environement
-Use `conda env export > requirements.yml` to update the requirements and `conda env create -f requirements.yml` to create the associated environment on a new machine. I you just want to update to the new version of the environment, use `conda env update -f requirements.yml --prune`.  
+Use `conda env export > requirements.yml` to update the requirements and `conda env create --name myenv -f requirements.yml` to create the associated environment on a new machine. I you just want to update to the new version of the environment, use `conda env update -f requirements.yml --prune`.  
 
 ## Run training run
 Modify a configuration file from the ones in the `..\configs` folder. Use the file whose name corresponds to the agent you want to use. Input the associated parameters for the run. Run the `python main.py -f ..\configs\<config-name>.yml` command from the `\code` folder. A copy of used configuration file along with the results (training metrics and figures) will be stored in the in the `..\runs\<run_name>` folder. The `<run_name>` here will be given from the parameters associated to the run and should therefore be easy to identify.  
