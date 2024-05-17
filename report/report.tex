@@ -22,67 +22,44 @@
     \section{Environment}
         The Mountain Car environment is a classic reinforcement learning problem. The agent is placed in a valley between two hills and has to learn to reach the top of the right hill. The agent can only apply a force of -1, 0 or 1 to the car. The car has a maximum speed of 0.07 and a maximum position of 0.6. The agent receives a reward of -1 at each time step, and a reward of 0 when it reaches the top of the hill. The episode ends when the agent reaches the top of the hill or after 200 steps. The state space is continuous and has two dimensions, the position and the velocity of the car. The action space is discrete and has three dimensions, the force applied to the car. The environment is implemented in the OpenAI gym library.
     \section{Random agent}
-    To analyse the performance of the agent, one can analyse the duration of the episodes as a function of time. Indeed, if the agent learns the task, the duration of the episodes should have a decreasing trend in time. This because at the start the agent doesn't know the task, and so the episode is truncated at `full\_ep\_len=200`, while as it learns it, it should manage to finish the task before reaching the step limit. 
-    
-    Running the the agent for 100 episodes, we obtain fig ... . Looking at it, it is clear that the agent does not lean the task, as all the durations coincide with the truncation time. 
+    To analyse the performance of the agent, one can analyse the duration of the episodes as a function of time. Indeed, if the agent learns the task, the duration of the episodes should decrease in time. This because at the start the agent doesn't know the task, and so the episode is truncated at `full\_ep\_len=200', while as it learns it, it should manage to finish the task before reaching the step limit. 
+    %\begin{figure}[h!]
+    %    \centering
+    %    \vspace{0em}
+    %    \includegraphics[width=.75\textwidth]{glm-plot}
+    %    \caption{Gamma GLM fit of the yearly maxima. Extreme events that occurred between 2013 and 2023 are also included.}
+    %    \label{fig:glm-plot}
+    %\end{figure}
+    Running the the agent for 100 episodes, we obtain fig ... . Looking at it, it is clear that the agent does not learn the task, as all the durations coincide with the truncation time. Actually the agent just oscillates around the minimum. This is due to the sparsity of the reward. 
     \section{DQN}
         \subsection{Vanilla version}
-        Running 100 episodes just as for the random agent and computing their duration along with the cumulated reward per episode, we get fig ... . Looking at it we see that the behaviour is the same as for the random agent, i.e. the agent does not learn the task.
-    
-        This is due to the sparsity of the reward. 
-        \subsection{Evolution metrics}
-        loss per episode over the samples ? 
-        would expect reduction 
-        actually the task is getting harder while we explore more
-        the loss trend is not expected to be decreasing before the steady state ?
-           what is this steady state ?
-     average cumulative reward per episode -> more like duration-normalised episode-cumulative reward 
+        Running 1000 episodes and computing their duration along with the cumulated reward per episode, we get fig (maybe not relevant)... . Looking at it we see that the behaviour is the same as for the random agent, i.e. the agent does not learn the task.
+        This is due again to the sparsity of the reward. 
+        \subsection{Training metrics}
+        To analyse further the training behaviour of our agents we can look at the loss and reward per episode. We can moreover look at the cumulative (cumulated) reward and cumulative successes over the episodes. 
         \subsection{Heuristic reward}
         \subsubsection{Heuristic reward function}
         To alleviate the sparsity of the reward, we introduce a heuristic reward function which can be used as auxiliary reward for the DQN agent. Intuitively, we want this function to make the agent learn it should reach the top of the hill, which is placed on the right of the environnement. We therefore decide to take a heuristic function that assigns a reward if the agent is on the right of its (average) starting point. To make sure the agent tries and reach higher and higher on the hill, we decide to make this function be a growing one with the position. A simple and versatile proposal is to take 
         $$
-        f(x) = A\mathbb I[x>\bar x\_0]x^n
+        f(x) = A\mathbb I[x>\bar x\_0](x-\langle{x_0}\rangle)^n
         $$
-        for $A>0$ some constant and a given $n\in\mathbb N^\star$. In practice we most often take $n=3$ and $A=0.1$.  
+        for $A>0$ some constant and a given $n\in\mathbb N^\star$. In practice we most often take $n=3$ and $A=0.1$. To make extra sure that for all values of the scale factor $A$, the agent does not get tempted to stay and collect the heuristic reward, we decide to offset the function by its maximal value (i.e. $A$). This way, the heuristic reward is always negative, and the agent is encouraged to reach the top of the hill.
         \subsubsection{Auxiliary reward scaling}
-        For the auxiliary reward to make sense it should be sufficiently large for it to 
-        reward, with relative scale
-          * to be used as baseline with no sparse reward, right ?? 
-          * if too small, does not speed up training as problem is just as hard
-          * if too large, we dominate the environnement reward 
-            * so to solve the two need to specify the same task 
-            * eg. if take degree=1 not trivial that we actually learn ??
-            * could even have instabilities ??
-          * 1.e-1 seems to work well 
-            * test 1.e0 and 2.e-2 ?? (sort of dicotomy + prior knowledge search)
-            * test the higher reward with low degree func ? 
-            * be on the lookout for instabilities 
+        For the auxiliary reward to be useful, it should intuitively not be too small. Otherwise the situation would be almost the same as when no auxiliary reward is granted. As for the upper bound, things are more subtle. If the auxiliary reward is too large, it will dominate the environment reward. For the specific choice of heuristic reward, this should not impact the learning of the task, as by itself it would already lead the agent to the reward. However, it if one choses the reward unwisely, we can imagine that the agent could learn to stay on the right of the environment to collect reward rather than finishing the episode.
+
+        This intuition is confirmed by the results reported in fig ... . 
+            %* test the higher reward with low degree func ? 
+            %* be on the lookout for instabilities 
         \section{RND reward}
             \subsection{Normalisation} 
-            * of the input 
-            * we subtract the mean to get some deviance from what we know, which is what we are trying to capture in the RND method (the mean state will be mapped to 0 ??, while the deviant states will be mapped to something else)
-            * the division by the std makes sure that this quantity is of right scale for NN input (in general would want to have the right order) 
-                * but then why not the in Q net ? can't scale the environment to gain stability ?
-            * of the output 
-            * by default could be centred at whatever value
-            * we center it because we want to avoid getting free reward (we want to stop giving rewards to states we have visited often, i.e. we have had time to fit)
-            * to make sure we have control of the scale through our reward-factor parameter we make sure we are of order one before scaling  
-                * clamping is there to avoid problems in heavy tail distributions ?
-                * as NNs are not linear 
-            * over what should we normalise ?
-                * can use whole buffer or batch 
-                * can do it for no extra expense by storing buffer mean and std and using update rule for mean quantities $f\_{n+1}(\vec x)=f\_n(\vec x\_n)+\frac{1}{n}(x\_{n+1}-x\_0)$ 
-                * they say not to compute at "few initial steps" but can wait until buffer is full 
-                    * we wait for the buffer to be full to start training as we want representative input to be given (and buffer length is not huge compared to training time)  
-                    * we could try and a posteriori compute the RND reward for the initial buffer but it turns out to mess up the gradients as it requires modifying variables that are used for the training of the RND net
+            As recommended by the hint, we standardise the input and output of the RND network. The input standardisation is done since we want to output to vary as a function of how different the observed state is compared to the previously visited ones. Indeed, subtracting the typical state (i.e. the mean one) provides a good idea of how different the new input state is. The normalising by the typical distance from the mean state (i.e. the standard deviation) is done to make sure the input is of order 1, which is a good practice for neural networks to avoid instabilities.
+            
+            The standardisation of the output is instead done to make sure that we can control the characteristics of the RND reward attributed to the states. Indeed, by subtracting the mean we make sure that typical states are penalised  while new ones are rewarded (so we promote exploration); while normalisation make it possible to tweak the the order of magnitude of the reward (as normalised variables are of order 1). The clamping is done to avoid problems with the non-linearity of the neural network. 
+            %    * but then why not the in Q net ? can't scale the environment to gain stability ?
             \subsection{Reward-factor scale}
-            * if too big
-            * we just keep trying new stuff and ignore the environement reward ??  
-            * if too small
-            * nothing happens, we continue being slow at learning the task
+            Mostly the same argument applies as for the heuristic reward. This time however, if the factor is taken too large, we expect the agent to prefer exploring instead of ending the episode by reaching the top of the hill. Indeed, when the agent will have reached the top of the hill a few times, the states that will have allowed it to do so will have a low RND reward. This is because the RND network will have seen them many times, and so the prediction error will be low.
             * right size ?
             * crude scale : over an episode the rewards should be comparable ?? 
-            * 
             * handling gradients 
             * they are set to zero after each update
             * we use target network to only include part of the loss in the differenciation 
@@ -91,4 +68,9 @@
               * we just keep a list instead, sampling with random indices 
           * we only start training once the replay buffer is full 
           * implementation of target net was done with help of chat gpt (command to import the weights from another net)
+        \section{Dyna}
+
+        \section{Conclusion}
+
+        \section{Appendix}
 \end{document}

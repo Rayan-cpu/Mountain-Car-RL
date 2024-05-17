@@ -9,7 +9,7 @@ DQN :
   Qs_NN_update_period : 3
 
 Heuristic :
-  degree : 3
-  reward_scale : 10
+  degree : 2
+  reward_scale : 1
 
   

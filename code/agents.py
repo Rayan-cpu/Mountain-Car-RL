@@ -82,6 +82,9 @@ class DQNAgent(Agent) :
         self.pre_train_steps = pre_train_steps # number of GD steps on which to 
         # train the auxiliary reward before starting the DQN training
         self.update_period = update_period
+        self.char_state = []
+        self.got_char_low = False
+        self.got_char_high = False
     
     @abstractmethod
     def float_auxiliar_r(self, state, next_state):
@@ -186,6 +189,23 @@ class DQNAgent(Agent) :
                 
         return
     
+    def save_char_states( self, duration ):
+        '''
+        Save the characteristic solutions of the environment to a file.
+        '''
+        if not self.got_char_high :
+            if duration > 150 and duration < 170:
+                self.got_char_high = True
+                self.char_state = np.array(self.char_state)
+                np.save('char_state_high.npy', self.char_state)
+        if not self.got_char_low :
+            if duration > 90 and duration < 120:
+                self.got_char_low = True
+                self.char_state = np.array(self.char_state)
+                np.save('char_state_low.npy', self.char_state)
+        self.char_state = []
+        return
+    
     def run_episode( self, env ):
         state, info = env.reset()
         done = False
@@ -197,20 +217,31 @@ class DQNAgent(Agent) :
         while not done:
             action = self.select_action(state) 
             next_state, reward, terminated, truncated, _ = env.step(action)
+            self.char_state.append( next_state )
             done = terminated or truncated
 
             self.observe(state, action, next_state, reward)
             if done and self.iter > self.buffer.len:
                 results['ep_loss'], results['ep_env_reward'], results['ep_aux_reward'] = self.update( done=done )
-                #ep_env_reward += 100. this is only in the continuous version of the environment, here we consider the discrete one ! (in all cases we should not add this if we truncated !)
             else : 
                 self.update( done=done )
-
             state = next_state
             results['duration'] += 1
-        results['ep_aux_reward'] = results['duration']
-        results['ep_env_reward'] = results['duration']
+        
+        if not (self.got_char_low and self.got_char_high):
+            self.save_char_states(results['duration'])
+
         return results
+
+class DQNVanilla(DQNAgent):
+    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
+        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps, update_period)
+
+    def sub_update(self, batch):
+        pass
+
+    def float_auxiliar_r(self, state, next_state):
+        return 0.
 
 class DQNAgentHeuristic(DQNAgent):
     def __init__(self, degree=3, frac=1.0-1, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
@@ -232,12 +263,13 @@ class DQNAgentHeuristic(DQNAgent):
         frac : fraction of the goal reward that is given to the agent
         '''
         x = state[0]
-        max_reward = 100
         x_reward = 0.5
         x_start = -0.5
-        a = max_reward / ( x_reward - x_start ) ** self.degree
+
+        #max_reward = 100
+        a = self.frac / ( ( x_reward - x_start ) ** self.degree )
         is_on_right = x > x_start
-        return self.frac * a * ( (x-x_start) ** self.degree ) * is_on_right + (1-is_on_right) * 0. # if the agent is on the left, the reward is 0
+        return is_on_right * ( a * (x-x_start) ** self.degree ) - self.frac # if the agent is on the left, the reward is 0
 
 class DQNAgentRND(DQNAgent) :
     def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=100, update_period=1):
@@ -264,8 +296,6 @@ class DQNAgentRND(DQNAgent) :
             self.reward_mean = np.mean( buffer_reward.detach().numpy() )
             self.reward_var = np.var( buffer_reward.detach().numpy() ) 
             
-            # adding the auxiliary rewards to the buffer so that the agent can learn from them led to an error when calling backward(). The autodiff notices that the variable changed value (as batch will have changed through the buffer). Since training time >> buffer update time, no solution to this was found.
-
         # check if this makes sense ???
         if self.train_index % self.update_period == 0 : 
             self.RND.train()
