@@ -317,7 +317,6 @@ class DQNAgentRND(DQNAgent) :
 
 
 class DynaAgent(Agent):
-    # okk here is my part !! exceptionnel !
     pass
 
         
