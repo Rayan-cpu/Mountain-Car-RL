@@ -56,9 +56,6 @@ class RandomAgent(Agent):
             results['duration'] += 1
         return results
 
-class DynaAgent(Agent):
-    pass
-
 class DQNAgent(Agent) :
     def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
         self.eps_start = epsilon # will then decay exponentially to eps_end
@@ -89,7 +86,7 @@ class DQNAgent(Agent) :
     @abstractmethod
     def float_auxiliar_r(self, state, next_state):
         '''
-        Return the auxiliary reward associated to the given state.
+        Return the auxiliary reward associated to the given state. in the general function no auxilary reward is present 
         '''
         pass
 
@@ -101,12 +98,13 @@ class DQNAgent(Agent) :
         next_state : state of the environment after taking the action
         reward : reward received after taking the action
         '''
-        self.ep_env_reward += reward
+        self.ep_env_reward += reward # add the environmental reward
         aux_reward = self.float_auxiliar_r( state, next_state )
         self.ep_aux_reward += aux_reward
 
-        reward += aux_reward
+        reward += aux_reward # add the auxilary reward 
         self.buffer.update( state, action, next_state, reward )
+        
         self.iter += 1
         return
 
@@ -318,5 +316,8 @@ class DQNAgentRND(DQNAgent) :
         return self.reward_factor * torch.clamp( norm_reward, -5, 5 )
 
 
+class DynaAgent(Agent):
+    # okk here is my part !! exceptionnel !
+    pass
 
         
