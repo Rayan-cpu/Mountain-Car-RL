@@ -15,7 +15,7 @@ delta_size = x_high.size - x_low.size
 t_high = np.arange(0, len(x_high))
 
 
-fig, ax = plt.subplots(2, 1, figsize=(10, 5), sharex=True)
+fig, ax = plt.subplots(2, 1, figsize=(6, 10), sharex=True)
 ax[0].scatter(x_low, t_low)
 ax[0].scatter(x_high[delta_size:], t_high[:-delta_size])
 ax[1].scatter(x_high, t_high)

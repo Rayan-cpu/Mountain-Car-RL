@@ -10,21 +10,25 @@ import shutil
 import analyse # to generate the plots
 
 def init_agent( configs ):
+    runs_dir = configs['Files']['runs_dir']
     agent_name = configs['General']['agent_type']
-    run_name = agent_name 
+    run_dir = f'{runs_dir}/{agent_name}'
+    run_path = ''
+    
     if agent_name == 'random':
-        return agents.RandomAgent(), run_name
+        run_path = f'{run_dir}/n_eps={configs['General']['n_episodes']}'
+        return agents.RandomAgent(), run_path
     elif agent_name == 'dqn_heuristic':
         up_tau = configs['DQN']['Qs_NN_update_period']
         degree = configs['Heuristic']['degree']
         frac = configs['Heuristic']['reward_scale']
-        run_name = f'{run_name}_up-tau={up_tau}_d={degree}_frac={frac}'
-        return agents.DQNAgentHeuristic( degree=degree, frac=frac, update_period=up_tau ), run_name
+        run_path = f'{run_dir}/up-tau={up_tau}_d={degree}_frac={frac}'
+        return agents.DQNAgentHeuristic( degree=degree, frac=frac, update_period=up_tau ), run_path
     elif agent_name == 'dqn_rnd':
         up_tau = configs['DQN']['Qs_NN_update_period']
         reward_factor = configs['RND']['reward_factor']
-        run_name = f'{run_name}_up-tau={up_tau}_r-fact={reward_factor}'
-        return agents.DQNAgentRND( reward_factor=reward_factor,update_period=configs['DQN']['Qs_NN_update_period'] ), run_name
+        run_path = f'{run_dir}/up-tau={up_tau}_r-fact={reward_factor}'
+        return agents.DQNAgentRND( reward_factor=reward_factor,update_period=configs['DQN']['Qs_NN_update_period'] ), run_path
     else:
         raise ValueError(f'Agent {agent_name} not found')
 
@@ -32,11 +36,11 @@ def main(config_file):
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file)
 
-    agent, run_name = init_agent( config )
+    agent, run_path = init_agent( config )
     env = gym.make('MountainCar-v0')
 
-    runs_dir = config['Files']['runs_dir']
-    run_path = f'{runs_dir}/{run_name}' 
+    #runs_dir = config['Files']['runs_dir']
+    #run_path = f'{runs_dir}/{run_name}' 
     if not os.path.exists(run_path):
         os.makedirs(run_path)
     shutil.copy(config_file, f'{run_path}/config.yml')

@@ -44,7 +44,7 @@ def plot_dqn( data, eps, fig_path ):
     ax[0].scatter(eps, data['duration'])
     ax[0].set_xlabel('Episode')
     ax[0].set_ylabel('Duration')
-    offset = eps[-1] - successes[-1]
+    offset = eps[-1] - successes.iloc[-1]
     ax[1].plot(eps, eps-offset, linestyle='--', color='k', label='Slope 1')
     ax[1].scatter(eps, successes, label='Observed')
     ax[1].set_xlabel('Episode')

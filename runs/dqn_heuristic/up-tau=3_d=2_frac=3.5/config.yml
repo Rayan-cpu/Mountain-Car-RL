@@ -6,7 +6,7 @@ Files :
   runs_dir : ../runs
 
 DQN : 
-  Qs_NN_update_period : 5
+  Qs_NN_update_period : 3
 
 Heuristic :
   degree : 2
