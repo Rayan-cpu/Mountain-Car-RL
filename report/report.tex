@@ -50,6 +50,12 @@
         This intuition is confirmed by the results reported in fig ... . 
             %* test the higher reward with low degree func ? 
             %* be on the lookout for instabilities 
+        \subsection{Two types of solutions ?}
+        From the plot of the episode durations, we can see that the agent seems to have two distinct behaviours. Indeed, we can see that the density of points is larger for $90<d<120$ and $150<d<180$ than in between of these ranges. Investigating this more closely (inspecting the trajectories associated to these performances), one can trace this difference back to the initial condition. 
+        
+        If we start on the right of the minimum, we are able to reach the goal fast by only 2 large swings : the first to the left and the second to the right. If we start on the left of the minimum, the solution takes longer. Indeed, we need to go right, then left, then right again. This is due to the fact that the car has to gain enough speed to reach the top of the hill.
+        Notice that the distinction between these two solutions is not that sharp. This is due to the fact that the initial condition is uniform over $[-0.6,-0.4]$, and so the agent sometimes starts close to the minimum, and therefore is not exactly in any of the two cases. 
+        %Indeed, one could think that the optimal strategy would be to go right->left->right with as large swings as possible. However, doing so results in an unnecessary large (and time-consuming) left swing, since as seen in the first solution the first (non large) swing is sufficient to obtained the necessary speed. The 
         \section{RND reward}
             \subsection{Normalisation} 
             As recommended by the hint, we standardise the input and output of the RND network. The input standardisation is done since we want to output to vary as a function of how different the observed state is compared to the previously visited ones. Indeed, subtracting the typical state (i.e. the mean one) provides a good idea of how different the new input state is. The normalising by the typical distance from the mean state (i.e. the standard deviation) is done to make sure the input is of order 1, which is a good practice for neural networks to avoid instabilities.
@@ -68,6 +74,8 @@
               * we just keep a list instead, sampling with random indices 
           * we only start training once the replay buffer is full 
           * implementation of target net was done with help of chat gpt (command to import the weights from another net)
+        \subsection{Comparison to heuristic reward}
+        * difference in behaviour : we oscillate between the two possible solutions. This can be explained by the fact that the RND reward penalises the agent for repeating moves, and therefore leads the agent to switch its method more. 
         \section{Dyna}
 
         \section{Conclusion}
