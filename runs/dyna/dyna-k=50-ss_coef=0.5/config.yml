@@ -1,0 +1,11 @@
+General : 
+  agent_type : dyna # dqn_vanilla, dqn_heuristic, dqn_rnd, random, dyna
+  n_episodes : 2000
+
+Files :
+  runs_dir : ../runs
+
+Dyna : 
+  k : 50
+  step_size_coef : 0.5
+
