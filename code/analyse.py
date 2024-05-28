@@ -140,11 +140,11 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
     y_min = -0.07
     y_max = 0.07
     plt.figure(figsize=(6, 4),layout='tight')
-    plt.plot(characteristic_trajectory_1[:,0],characteristic_trajectory_1[:,1],color='r',label='1')
-    plt.plot(characteristic_trajectory_2[:,0],characteristic_trajectory_2[:,1],color='b',label='2')
-    plt.plot(characteristic_trajectory_3[:,0],characteristic_trajectory_3[:,1],color='g',label='3')
-    plt.plot(characteristic_trajectory_4[:,0],characteristic_trajectory_4[:,1],color='m',label='4')
-    plt.scatter(characteristic_trajectory_1[0,0],characteristic_trajectory_1[0,1],color='r')
+    #plt.plot(characteristic_trajectory_1[:,0],characteristic_trajectory_1[:,1],color='r',label='1')
+    plt.plot(characteristic_trajectory_2[:,0],characteristic_trajectory_2[:,1],color='b',label='1')
+    plt.plot(characteristic_trajectory_3[:,0],characteristic_trajectory_3[:,1],color='g',label='2')
+    plt.plot(characteristic_trajectory_4[:,0],characteristic_trajectory_4[:,1],color='m',label='3')
+    #plt.scatter(characteristic_trajectory_1[0,0],characteristic_trajectory_1[0,1],color='r')
     plt.scatter(characteristic_trajectory_2[0,0],characteristic_trajectory_2[0,1],color='b')
     plt.scatter(characteristic_trajectory_3[0,0],characteristic_trajectory_3[0,1],color='g')
     plt.scatter(characteristic_trajectory_4[0,0],characteristic_trajectory_4[0,1],color='m')
@@ -330,24 +330,22 @@ def gen_plots(run_path, agent):
         plot_random( data, eps, fig_path )
     elif agent == 'dyna':
         # import the 4 vectors : 
-        final_Q_matrix = np.loadtxt(f'{run_path}/Additional_data/final_Q_matrix.dat')
-        pos_axis_plot = np.loadtxt(f'{run_path}/Additional_data/pos_axis_plot.dat')
-        vel_axis_plot = np.loadtxt(f'{run_path}/Additional_data/vel_axis_plot.dat')
-        Count_matrix = np.loadtxt(f'{run_path}/Additional_data/Count_matrix.dat')
+        with h5.File(f'{run_path}/Additional_data.hdf5', 'r') as f:
+            final_Q_matrix = f['final_Q_matrix'][:]
+            pos_axis_plot = f['pos_axis_plot'][:]
+            vel_axis_plot = f['vel_axis_plot'][:]
+            Count_matrix = f['Count_matrix'][:]
+            characteristic_trajectory_1 = f['characteristic_trajectory_1'][:]
+            characteristic_trajectory_2 = f['characteristic_trajectory_2'][:]
+            characteristic_trajectory_3 = f['characteristic_trajectory_3'][:]
+            characteristic_trajectory_4 = f['characteristic_trajectory_4'][:]
+            characteristic_Q_1 = f['characteristic_Q_1'][:]
+            characteristic_Q_2 = f['characteristic_Q_2'][:]
+            characteristic_Q_3 = f['characteristic_Q_3'][:]
+            characteristic_Count_1 = f['characteristic_Count_1'][:]
+            characteristic_Count_2 = f['characteristic_Count_2'][:]
+            characteristic_Count_3 = f['characteristic_Count_3'][:]
 
-        characteristic_trajectory_1 = np.loadtxt(f'{run_path}/Additional_data/characteristic_trajectory_1.dat')
-        characteristic_trajectory_2 = np.loadtxt(f'{run_path}/Additional_data/characteristic_trajectory_2.dat')
-        characteristic_trajectory_3 = np.loadtxt(f'{run_path}/Additional_data/characteristic_trajectory_3.dat')
-        characteristic_trajectory_4 = np.loadtxt(f'{run_path}/Additional_data/characteristic_trajectory_4.dat')
-        
-        characteristic_Q_1 = np.loadtxt(f'{run_path}/Additional_data/characteristic_Q_1.dat')
-        characteristic_Q_2 = np.loadtxt(f'{run_path}/Additional_data/characteristic_Q_2.dat')
-        characteristic_Q_3 = np.loadtxt(f'{run_path}/Additional_data/characteristic_Q_3.dat')
-
-        characteristic_Count_1 = np.loadtxt(f'{run_path}/Additional_data/characteristic_Count_1.dat')
-        characteristic_Count_2 = np.loadtxt(f'{run_path}/Additional_data/characteristic_Count_2.dat')
-        characteristic_Count_3 = np.loadtxt(f'{run_path}/Additional_data/characteristic_Count_3.dat')
-        
         plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4)
         plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic_Q_1,characteristic_Q_2,characteristic_Q_3,final_Q_matrix,characteristic_Count_1,characteristic_Count_2,characteristic_Count_3,Count_matrix)
     
