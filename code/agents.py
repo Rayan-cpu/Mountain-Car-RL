@@ -8,6 +8,10 @@ from utility import MLP, ReplayBuffer
 
 class Agent(ABC):
     # Abstract base class for all agents, defines the mandatory methods.
+    def __init__(self, eval_mode):
+        self.eval_mode = eval_mode
+        pass
+
     @abstractmethod
     def observe(self, state, action, next_state, reward):
         pass
@@ -23,6 +27,11 @@ class Agent(ABC):
 
     @abstractmethod
     def run_episode( self, env ) -> dict:
+        pass
+
+    @abstractmethod
+    def save_training(self, filename):
+        # save the model to a file
         pass
 
     actions = [0,1,2] # we can move left, stay or move right (same across all agents)
@@ -55,9 +64,12 @@ class RandomAgent(Agent):
             done = terminated or truncated
             results['duration'] += 1
         return results
+    
+    def save_training(self, filename): # nothing to save
+        pass 
 
 class DQNAgent(Agent) :
-    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
+    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1, load_from=None):
         self.eps_start = epsilon # will then decay exponentially to eps_end
         self.eps_end = 0.05 # asymptotic value for epsilon
         self.eps_tau = 100*self.full_ep_len # characteristic time for the decay
@@ -82,6 +94,12 @@ class DQNAgent(Agent) :
         self.char_state = []
         self.got_char_low = False
         self.got_char_high = False
+
+        eval_mode = False
+        if load_from is not None:
+            self.Qs.load_state_dict( torch.load(f'{load_from}.pt') )
+            eval_mode = True
+        super().__init__(eval_mode)
     
     @abstractmethod
     def float_auxiliar_r(self, state, next_state):
@@ -105,7 +123,6 @@ class DQNAgent(Agent) :
         reward += aux_reward # add the auxilary reward 
         self.buffer.update( state, action, next_state, reward )
         
-        
         return
 
     def select_action(self, state): 
@@ -114,15 +131,17 @@ class DQNAgent(Agent) :
         state : current state of the environment
         '''
         self.Qs.eval()
+        Qs = self.Qs(torch.tensor(state))
+        action_index = torch.argmax( Qs )
 
-        # epsilon decay
+        if self.eval_mode:
+            return self.actions[action_index]            
+
+        # otherwise : epsilon greedy policy
         self.epsilon = self.eps_end + (self.eps_start - self.eps_end) * np.exp( -self.iter/self.eps_tau )
-        
-        # epsilon greedy policy
         if random.random() < self.epsilon:
             return random.choice( self.actions )
         else:
-            action_index = torch.argmax( self.Qs(torch.tensor(state)) )
             return self.actions[action_index]
 
     def huber_loss( self, x, y ):
@@ -208,21 +227,24 @@ class DQNAgent(Agent) :
         state, info = env.reset()
         done = False
         results = {'duration' : 0}
-        results['ep_env_reward'] = 0
-        results['ep_aux_reward'] = 0
-        results['ep_loss'] = 0.
+        if not self.eval_mode: # otherwise only need duration
+            results['ep_env_reward'] = 0.
+            results['ep_aux_reward'] = 0.
+            results['ep_loss'] = 0.
         
         while not done:
             action = self.select_action(state) 
             next_state, reward, terminated, truncated, _ = env.step(action)
-            self.char_state.append( next_state )
             done = terminated or truncated
 
-            self.observe(state, action, next_state, reward)
-            if done and self.iter > self.buffer.len:
-                results['ep_loss'], results['ep_env_reward'], results['ep_aux_reward'] = self.update( done=done )
-            else : 
-                self.update( done=done )
+            self.char_state.append( next_state )
+            if not self.eval_mode:
+                self.observe(state, action, next_state, reward)
+                if done and self.iter > self.buffer.len:
+                    results['ep_loss'], results['ep_env_reward'], results['ep_aux_reward'] = self.update( done=done )
+                else : 
+                    self.update( done=done )
+            
             state = next_state
             results['duration'] += 1
         
@@ -231,9 +253,18 @@ class DQNAgent(Agent) :
 
         return results
 
+    
+    def save_training(self, filename): 
+        '''
+        Save the model to a file, so that it can be run in evaluation mode later.
+        '''
+        torch.save(self.Qs.state_dict(), f'{filename}.pt')
+        return 
+    
+
 class DQNVanilla(DQNAgent):
-    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
-        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps, update_period)
+    def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1, load_from=None):
+        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps, update_period, load_from)
 
     def sub_update(self, batch):
         pass
@@ -242,8 +273,8 @@ class DQNVanilla(DQNAgent):
         return 0.
 
 class DQNAgentHeuristic(DQNAgent):
-    def __init__(self, degree=3, frac=1.0-1, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1):
-        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps, update_period)
+    def __init__(self, degree=3, frac=1.0-1, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1, load_from=None):
+        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps, update_period, load_from)
         self.frac = frac
         self.degree = degree
 
@@ -270,8 +301,8 @@ class DQNAgentHeuristic(DQNAgent):
         return is_on_right * ( a * (x-x_start) ** self.degree ) - self.frac # if the agent is on the left, the reward is 0
 
 class DQNAgentRND(DQNAgent) :
-    def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=100, update_period=1):
-        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps=pre_train_steps, update_period=update_period)
+    def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=100, update_period=1, load_from=None):
+        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps=pre_train_steps, update_period=update_period) # have to add load_from
         self.RND = MLP( 2, 1 )
         self.RND_optimizer = torch.optim.Adam(self.RND.parameters(), lr=1e-3)
         self.RND_target = MLP( 2, 1 )

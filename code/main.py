@@ -54,9 +54,6 @@ def main(config_file):
     agent, run_path, bool_dyna = init_agent( config ) 
     env = gym.make('MountainCar-v0')
 
-    #runs_dir = config['Files']['runs_dir']
-    #run_path = f'{runs_dir}/{run_name}' 
-
     # si le path nexiste pas alors cree un folder 
     if not os.path.exists(run_path):
         os.makedirs(run_path)
@@ -87,9 +84,22 @@ def main(config_file):
     end = time.time()
     duration = end - start
     print(f'Training took: {(end-start)/60:.3} min')
+
     # save data :
     df = pd.DataFrame(results) # write results to file
-    df.to_hdf(f'{run_path}/metrics.h5', key='data', mode='w') 
+    df.to_hdf(f'{run_path}/metrics.h5', key='data', mode='w')
+
+    if config['General']['agent_type'] == 'dqn_heuristic':
+        agent.save_training(f'{run_path}/trained_model')
+
+        new_agent = agents.DQNAgentHeuristic( load_from=f'{run_path}/trained_model')
+        new_n_eps = 100
+        new_results = np.zeros(new_n_eps)
+        for i in range(new_n_eps):
+            dic = new_agent.run_episode(env)
+            new_results[i] = dic['duration']
+        
+        print(f'Average duration of the episodes: {np.mean(new_results)}')
 
     # save additional data in case we are dealing with dyna :
     if bool_dyna:
@@ -123,6 +133,24 @@ def main(config_file):
     analyse.gen_plots(run_path, config['General']['agent_type'])
     print(f'Done plotting !')
 
+def compare_performances( n_eps=1000 ):
+    dqn_heuristic = agents.DQNAgentHeuristic( load_from='runs/dqn_heuristic/up-tau=1000_d=2_frac=0.01/trained_model')
+    dqn_rnd = agents.DQNAgentRND( load_from='runs/dqn_rnd/up-tau=1000_r-fact=0.01/trained_model')
+    dyna = agents.DynaAgent( load_from='runs/dyna/dyna-k=5-ss_coef=0.1/trained_model')
+
+    env = gym.make('MountainCar-v0')
+    seeds = np.arange(n_eps)
+    results = np.zeros((n_eps, 3))
+
+    for i in range(n_eps):
+        env.reset( seed=seeds[i] )
+        results[i, 0] = dqn_heuristic.run_episode(env)['duration']
+        env.reset( seed=seeds[i] )
+        results[i, 1] = dqn_rnd.run_episode(env)['duration']
+        env.reset( seed=seeds[i] )
+        results[i, 2] = dyna.run_episode(env)['duration']
+
+    pass
 
 if __name__ == '__main__':
     # faire arriver les arugments du config 

@@ -47,6 +47,7 @@ def plot_dqn( data, eps, fig_path ):
     cumsum_reward = cumsum_aux_reward + cumsum_env_reward
 
     fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+
     ax[0].scatter(eps, data['duration'])
     ax[0].set_xlabel('Episode')
     ax[0].set_ylabel('Duration')

@@ -1,3 +1,22 @@
+#%%
+
+class Employee():
+    cls_id = 'emp-cls'
+
+    def __init__(self, name):
+        self.salary = 100
+        self.name = name
+
+
+class Developer(Employee):
+    def __init__(self, name):
+        super().__init__(name)
+
+d1 = Developer('bobbyhadz')
+print(d1.salary)  
+print(d1.cls_id)  
+
+
 #%% 
 import pandas as pd
 import h5py as h5
