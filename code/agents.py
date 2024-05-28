@@ -358,7 +358,14 @@ class DQNAgentRND(DQNAgent) :
 
 class DynaAgent(Agent):
 
-    def __init__(self,k = 3, x_step=0.025,v_step=0.005, gamma=0.99, epsilon=0.9):
+    def __init__(self,k = 3, x_step=0.025,v_step=0.005, gamma=0.99, epsilon=0.9, load_from=None):
+
+        eval_mode = False
+        if load_from is not None:
+            self.Q_matrix = np.loadtxt(f'{load_from}.txt')
+            eval_mode = True
+        super().__init__(eval_mode)
+
         self.discr_step = np.array([x_step,v_step])
         self.gamma = gamma
         self.epsilon = epsilon
@@ -486,18 +493,24 @@ class DynaAgent(Agent):
 
         return 
 
-    def select_action(self, state):
+    def select_action(self, state):  
+
         vector_Q_values = self.Q_matrix[self.discretize(state),:] # the Q-values corresponding to the state (for different actions)
         # epsilon decay
         self.epsilon = self.eps_end + (self.eps_start - self.eps_end) * np.exp( -self.iter/self.eps_tau )
-        
-        # epsilon greedy policy
-        if random.random() < self.epsilon:
-            return random.choice( self.actions )
-        else:
-            vector_Q_values = torch.tensor(vector_Q_values, dtype=torch.float32) 
-            action_index = torch.argmax( vector_Q_values )
-            return self.actions[action_index]
+
+        vector_Q_values = torch.tensor(vector_Q_values, dtype=torch.float32) 
+        action_index = torch.argmax( vector_Q_values )
+
+        # if it is the evaluation mode, directly take the greedy policy:  
+        if self.eval_mode:
+            return self.actions[action_index] 
+        else : 
+            # if not evaluation mode, rather use the epsilon greedy policy: 
+            if random.random() < self.epsilon:
+                return random.choice( self.actions )
+            else:
+                return self.actions[action_index]
         
     def Q_update_equation(self,s,a):
         P_s_a = self.P_tensor[s, a, :]  # shape (noOfstates,) / Extracting the slice of the transition probabilities for the given state and action
@@ -606,8 +619,11 @@ class DynaAgent(Agent):
         done = False
         self.episode_number += 1
         results = {'duration' : 0}
-        results['ep_env_reward'] = 0
-        results['ep_Q_values_change'] = 0
+
+        if not self.eval_mode: # otherwise only need duration
+            results['ep_env_reward'] = 0
+            results['ep_Q_values_change'] = 0
+
         self.step_index = 0
         total_Q_value_change = 0
         total_reward = 0
@@ -618,28 +634,39 @@ class DynaAgent(Agent):
             action = self.select_action(state) # select an action 
             next_state, reward, terminated, truncated, _ = env.step(action) # make the agent move 
             done = terminated or truncated # check if it has ended
-            self.observe(state, action, next_state, reward) # updates R,P, and counts_matrix
 
-            self.update() # update the belief on the Q values 
-            self.Rs_list.append(reward)
-            total_reward = total_reward + reward
+            if not self.eval_mode:
+                self.observe(state, action, next_state, reward) # updates R,P, and counts_matrix
+
+                self.update() # update the belief on the Q values 
+                self.Rs_list.append(reward)
+                total_reward = total_reward + reward
+                # conserve the states (that potentially will be injected as a characteristic state if it obeys some criteria) : 
+                states_of_episode.append(state)
+
             state = next_state
             results['duration'] += 1
 
-            # conserve the states (that potentially will be injected as a characteristic state if it obeys some criteria) : 
-            states_of_episode.append(state)
+        if not self.eval_mode:
+            #store the characteristic trajectories if relevant (done under conditions put in the functions)
+            self.store_trajectories(results['duration'],states_of_episode)
+            #store the characteristic Q and count matrices if relevant
+            self.store_Q_matrix(results['duration'])
+            self.store_Count_matrix(results['duration'])
 
-        #store the characteristic trajectories if relevant (done under conditions put in the functions)
-        self.store_trajectories(results['duration'],states_of_episode)
-        #store the characteristic Q and count matrices if relevant
-        self.store_Q_matrix(results['duration'])
-        self.store_Count_matrix(results['duration'])
+            results['ep_Q_values_change'] = total_Q_value_change
+            results['ep_env_reward'] = total_reward
+            Q_matrix_after = np.copy(self.Q_matrix)
+            results['ep_Q_values_change'] = self.Q_values_distance(Q_matrix_before,Q_matrix_after)
 
-        results['ep_Q_values_change'] = total_Q_value_change
-        results['ep_env_reward'] = total_reward
-        Q_matrix_after = np.copy(self.Q_matrix)
-        results['ep_Q_values_change'] = self.Q_values_distance(Q_matrix_before,Q_matrix_after)
         return results
+    
+    def save_training(self, filename):
+        '''
+        This function will be used in the main.py !
+        '''
+        np.savetxt(f'{filename}.txt', self.Q_matrix)
+        return 
     
 
     def end_episode(self):

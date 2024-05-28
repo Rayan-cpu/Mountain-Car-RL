@@ -48,7 +48,7 @@ def init_agent( configs ):
         x_step= step_size_coef*0.025
         v_step= step_size_coef*0.005
         run_path = f'{run_dir}/dyna-k={k_value}-ss_coef={step_size_coef}'
-        return agents.DynaAgent(k = k_value,x_step=x_step,v_step=v_step), run_path, bool_dyna
+        return agents.DynaAgent(k = k_value,x_step=x_step,v_step=v_step,load_from=None), run_path, bool_dyna
     else:
         raise ValueError(f'Agent {agent_name} not found')
 
@@ -79,11 +79,7 @@ def main(config_file):
         result_at_ep = agent.run_episode(env)
         results.append( result_at_ep ) # append the list of the results with a dictionary 
         if bool_dyna and bool_final: # add the if we are using dyna ! 
-            final_Q_matrix, pos_axis_plot, vel_axis_plot, Count_matrix,characteristic_trajectory_1,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4,characteristic_Q_1, characteristic_Q_2, characteristic_Q_3,characteristic_Count_1, characteristic_Count_2, characteristic_Count_3 = agent.end_episode()
-            additional_results['final_Q_matrix'], additional_results['pos_axis_plot'], additional_results['vel_axis_plot'], additional_results['Count_matrix'] = final_Q_matrix, pos_axis_plot, vel_axis_plot, Count_matrix
-            additional_results['characteristic_trajectory_1'], additional_results['characteristic_trajectory_2'], additional_results['characteristic_trajectory_3'], additional_results['characteristic_trajectory_4'] = characteristic_trajectory_1, characteristic_trajectory_2, characteristic_trajectory_3, characteristic_trajectory_4
-            additional_results['characteristic_Q_1'],additional_results['characteristic_Q_2'],additional_results['characteristic_Q_3']= characteristic_Q_1, characteristic_Q_2, characteristic_Q_3
-            additional_results['characteristic_Count_1'],additional_results['characteristic_Count_2'],additional_results['characteristic_Count_3']= characteristic_Count_1, characteristic_Count_2, characteristic_Count_3
+            additional_results['final_Q_matrix'], additional_results['pos_axis_plot'], additional_results['vel_axis_plot'], additional_results['Count_matrix'],additional_results['characteristic_trajectory_1'],additional_results['characteristic_trajectory_2'],additional_results['characteristic_trajectory_3'],additional_results['characteristic_trajectory_4'],additional_results['characteristic_Q_1'], additional_results['characteristic_Q_2'], additional_results['characteristic_Q_3'],additional_results['characteristic_Count_1'],additional_results['characteristic_Count_2'],additional_results['characteristic_Count_3'] = agent.end_episode()
         if i % sampling == 0:
             print(f'{i/n_eps*100:.1f} % of episodes done')
     end = time.time()
@@ -101,25 +97,22 @@ def main(config_file):
     if bool_dyna:
         additional_data_path = f'{run_path}/Additional_data'
         os.makedirs(additional_data_path, exist_ok=True)
-        np.savetxt(f'{run_path}/Additional_data/final_Q_matrix.dat', additional_results['final_Q_matrix'])
-        np.savetxt(f'{run_path}/Additional_data/pos_axis_plot.dat', additional_results['pos_axis_plot'])
-        np.savetxt(f'{run_path}/Additional_data/vel_axis_plot.dat', additional_results['vel_axis_plot'])
-        np.savetxt(f'{run_path}/Additional_data/Count_matrix.dat', additional_results['Count_matrix'])
-
-        np.savetxt(f'{run_path}/Additional_data/characteristic_trajectory_1.dat', additional_results['characteristic_trajectory_1'])
-        np.savetxt(f'{run_path}/Additional_data/characteristic_trajectory_2.dat', additional_results['characteristic_trajectory_2'])
-        np.savetxt(f'{run_path}/Additional_data/characteristic_trajectory_3.dat', additional_results['characteristic_trajectory_3'])
-        np.savetxt(f'{run_path}/Additional_data/characteristic_trajectory_4.dat', additional_results['characteristic_trajectory_4'])
-
-        np.savetxt(f'{run_path}/Additional_data/characteristic_Q_1.dat', additional_results['characteristic_Q_1'])
-        np.savetxt(f'{run_path}/Additional_data/characteristic_Q_2.dat', additional_results['characteristic_Q_2'])
-        np.savetxt(f'{run_path}/Additional_data/characteristic_Q_3.dat', additional_results['characteristic_Q_3'])
-
-        np.savetxt(f'{run_path}/Additional_data/characteristic_Count_1.dat', additional_results['characteristic_Count_1'])
-        #print(additional_results['characteristic_Count_1'])
-        np.savetxt(f'{run_path}/Additional_data/characteristic_Count_2.dat', additional_results['characteristic_Count_2'])
-        np.savetxt(f'{run_path}/Additional_data/characteristic_Count_3.dat', additional_results['characteristic_Count_3'])
-
+        with h5.File(additional_data_path + '.hdf5', 'w') as file : 
+            file.create_dataset('final_Q_matrix',data = additional_results['final_Q_matrix'])
+            file.create_dataset('pos_axis_plot',data = additional_results['pos_axis_plot'])
+            file.create_dataset('vel_axis_plot',data = additional_results['vel_axis_plot'])
+            file.create_dataset('Count_matrix',data = additional_results['Count_matrix'])
+            file.create_dataset('characteristic_trajectory_1',data = additional_results['characteristic_trajectory_1'])
+            file.create_dataset('characteristic_trajectory_2',data = additional_results['characteristic_trajectory_2'])
+            file.create_dataset('characteristic_trajectory_3',data = additional_results['characteristic_trajectory_3'])
+            file.create_dataset('characteristic_trajectory_4',data = additional_results['characteristic_trajectory_4'])
+            file.create_dataset('characteristic_Q_1',data = additional_results['characteristic_Q_1'])
+            file.create_dataset('characteristic_Q_2',data = additional_results['characteristic_Q_2'])
+            file.create_dataset('characteristic_Q_3',data = additional_results['characteristic_Q_3'])
+            file.create_dataset('characteristic_Count_1',data = additional_results['characteristic_Count_1'])
+            file.create_dataset('characteristic_Count_2',data = additional_results['characteristic_Count_2'])
+            file.create_dataset('characteristic_Count_3',data = additional_results['characteristic_Count_3'])
+        
     # add simulation information to the file
     with h5.File(f'{run_path}/metrics.h5', 'a') as f:
         f.create_dataset('eps', data=range(n_eps))
