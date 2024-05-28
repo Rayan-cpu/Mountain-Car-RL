@@ -6,10 +6,10 @@ Files :
   runs_dir : ../runs
 
 DQN : 
-  Qs_NN_update_period : 1
+  Qs_NN_update_period : 3
 
 Heuristic :
   degree : 2
-  reward_scale : 3.5
+  reward_scale : 1.
 
   

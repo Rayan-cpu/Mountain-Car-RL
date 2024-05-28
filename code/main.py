@@ -135,8 +135,8 @@ def main(config_file):
 
 def compare_performances( n_eps=1000 ):
     dqn_heuristic = agents.DQNAgentHeuristic( load_from='runs/dqn_heuristic/up-tau=1000_d=2_frac=0.01/trained_model')
-    dqn_rnd = agents.DQNAgentRND( load_from='runs/dqn_rnd/up-tau=1000_r-fact=0.01/trained_model')
-    dyna = agents.DynaAgent( load_from='runs/dyna/dyna-k=5-ss_coef=0.1/trained_model')
+    #dqn_rnd = agents.DQNAgentRND( load_from='runs/dqn_rnd/up-tau=1000_r-fact=0.01/trained_model')
+    #dyna = agents.DynaAgent( load_from='runs/dyna/dyna-k=5-ss_coef=0.1/trained_model')
 
     env = gym.make('MountainCar-v0')
     seeds = np.arange(n_eps)

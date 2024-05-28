@@ -70,6 +70,7 @@ class RandomAgent(Agent):
 
 class DQNAgent(Agent) :
     def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1, load_from=None):
+        
         self.eps_start = epsilon # will then decay exponentially to eps_end
         self.eps_end = 0.05 # asymptotic value for epsilon
         self.eps_tau = 100*self.full_ep_len # characteristic time for the decay
@@ -122,7 +123,7 @@ class DQNAgent(Agent) :
 
         reward += aux_reward # add the auxilary reward 
         self.buffer.update( state, action, next_state, reward )
-        
+        self.iter += 1
         return
 
     def select_action(self, state): 
@@ -238,8 +239,11 @@ class DQNAgent(Agent) :
             done = terminated or truncated
 
             self.char_state.append( next_state )
+            #print(f'foo {self.eval_mode}')
             if not self.eval_mode:
                 self.observe(state, action, next_state, reward)
+               # if done :
+                #    print(f'{self.iter}, {self.buffer.len}')
                 if done and self.iter > self.buffer.len:
                     results['ep_loss'], results['ep_env_reward'], results['ep_aux_reward'] = self.update( done=done )
                 else : 
@@ -294,11 +298,17 @@ class DQNAgentHeuristic(DQNAgent):
         x = state[0]
         x_reward = 0.5
         x_start = -0.5
-
+        '''
+        #offset = self.frac
         #max_reward = 100
         a = self.frac / ( ( x_reward - x_start ) ** self.degree )
         is_on_right = x > x_start
-        return is_on_right * ( a * (x-x_start) ** self.degree ) - self.frac # if the agent is on the left, the reward is 0
+        return is_on_right * ( a * (x-x_start) ** self.degree ) - offset
+        '''
+        h = 0.5 * ( 1 - np.cos( np.pi * ( x - x_start ) / ( x_reward - x_start ) ) )
+        return self.frac * ( h ** self.degree - 1 )
+
+
 
 class DQNAgentRND(DQNAgent) :
     def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=100, update_period=1, load_from=None):
