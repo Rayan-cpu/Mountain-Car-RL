@@ -23,6 +23,11 @@ def init_agent( configs ):
         just_for_syntax = configs['General']['n_episodes']
         run_path = f'{run_dir}/n_eps={just_for_syntax}'
         return agents.RandomAgent(), run_path, bool_dyna 
+    elif agent_name == 'dqn_vanilla':
+        bool_dyna = False
+        up_tau = configs['DQN']['Qs_NN_update_period']
+        run_path = f'{run_dir}/up-tau={up_tau}'
+        return agents.DQNVanilla( update_period=up_tau ), run_path, bool_dyna
     elif agent_name == 'dqn_heuristic':
         bool_dyna = False
         up_tau = configs['DQN']['Qs_NN_update_period']
@@ -89,17 +94,8 @@ def main(config_file):
     df = pd.DataFrame(results) # write results to file
     df.to_hdf(f'{run_path}/metrics.h5', key='data', mode='w')
 
-    if config['General']['agent_type'] == 'dqn_heuristic':
+    if config['General']['agent_type'][:3] == 'dqn':
         agent.save_training(f'{run_path}/trained_model')
-
-        new_agent = agents.DQNAgentHeuristic( load_from=f'{run_path}/trained_model')
-        new_n_eps = 100
-        new_results = np.zeros(new_n_eps)
-        for i in range(new_n_eps):
-            dic = new_agent.run_episode(env)
-            new_results[i] = dic['duration']
-        
-        print(f'Average duration of the episodes: {np.mean(new_results)}')
 
     # save additional data in case we are dealing with dyna :
     if bool_dyna:
@@ -134,8 +130,9 @@ def main(config_file):
     print(f'Done plotting !')
 
 def compare_performances( n_eps=1000 ):
-    dqn_heuristic = agents.DQNAgentHeuristic( load_from='runs/dqn_heuristic/up-tau=1000_d=2_frac=0.01/trained_model')
-    #dqn_rnd = agents.DQNAgentRND( load_from='runs/dqn_rnd/up-tau=1000_r-fact=0.01/trained_model')
+    dqn_heuristic = agents.DQNAgentHeuristic( load_from='runs/dqn_heuristic/up-tau=3_d=2_frac=0.01/trained_model')
+    dqn_vanilla = agents.DQNVanilla( load_from='runs/dqn_vanilla/up-tau=3/trained_model')
+    #dqn_rnd = agents.DQNAgentRND( load_from='runs/dqn_rnd/up-tau=3_r-fact=0.01/trained_model')
     #dyna = agents.DynaAgent( load_from='runs/dyna/dyna-k=5-ss_coef=0.1/trained_model')
 
     env = gym.make('MountainCar-v0')
@@ -146,9 +143,10 @@ def compare_performances( n_eps=1000 ):
         env.reset( seed=seeds[i] )
         results[i, 0] = dqn_heuristic.run_episode(env)['duration']
         env.reset( seed=seeds[i] )
-        results[i, 1] = dqn_rnd.run_episode(env)['duration']
-        env.reset( seed=seeds[i] )
-        results[i, 2] = dyna.run_episode(env)['duration']
+        results[i, 1] = dqn_vanilla.run_episode(env)['duration']
+        #results[i, 1] = dqn_rnd.run_episode(env)['duration']
+        #env.reset( seed=seeds[i] )
+        #results[i, 2] = dyna.run_episode(env)['duration']
 
     pass
 
@@ -159,25 +157,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # args.config_file est un nom de file 
     main(args.config_file)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -10,6 +10,6 @@ DQN :
 
 Heuristic :
   degree : 2
-  reward_scale : 3.5
+  reward_scale : 0.35
 
   

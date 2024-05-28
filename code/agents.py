@@ -39,6 +39,7 @@ class Agent(ABC):
 
 class RandomAgent(Agent):
     def __init__(self):
+        super().__init__(eval_mode=False)
         pass
 
     def observe(self, state, action, next_state, reward):
@@ -242,8 +243,6 @@ class DQNAgent(Agent) :
             #print(f'foo {self.eval_mode}')
             if not self.eval_mode:
                 self.observe(state, action, next_state, reward)
-               # if done :
-                #    print(f'{self.iter}, {self.buffer.len}')
                 if done and self.iter > self.buffer.len:
                     results['ep_loss'], results['ep_env_reward'], results['ep_aux_reward'] = self.update( done=done )
                 else : 

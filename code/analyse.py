@@ -36,6 +36,27 @@ def plot_random( data, eps, fig_path ):
     plt.savefig( f'{fig_path}/duration.png')
     return
 
+def plot_vanilla_dqn( data, eps, fig_path ):
+    smoothing = 10 
+    ep_loss = np.convolve( data['ep_loss'], np.ones(smoothing)/smoothing, mode='valid' )
+    ep_env_reward = np.convolve(data['ep_env_reward'], np.ones(smoothing)/smoothing, mode='valid')
+
+    fig, ax = plt.subplots( 1, 3, figsize=(16, 6), layout='tight' )
+    ax[0].scatter(eps, data['duration'])
+    ax[0].set_xlabel('Episode')
+    ax[0].set_ylabel('Duration')
+
+    ax[1].plot(ep_env_reward)
+    ax[1].set_xlabel('Episode')
+    ax[1].set_ylabel('Episode Reward (smoothed)')
+
+    ax[2].plot(ep_loss)
+    ax[2].set_xlabel('Episode')
+    ax[2].set_ylabel('Loss (smoothed)')
+    plt.savefig( f'{fig_path}/full_results.png')
+
+    return
+
 def plot_dqn( data, eps, fig_path ):
     smoothing = 10 # to smooth the rewards
     ep_env_reward = np.convolve(data['ep_env_reward'], np.ones(smoothing)/smoothing, mode='valid')
@@ -79,6 +100,34 @@ def plot_dqn( data, eps, fig_path ):
     plt.savefig( f'{fig_path}/loss.png')
 
     return
+
+def heuristic_comparison( r_factor ):
+    degree = 2
+    update_tau = 3
+    run_dir = f'../runs/dqn_heuristic'
+    fig_path = f'{run_dir}'
+
+    fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+    marker = ['.', '^']
+    for i,r_factor_ in enumerate(r_factor):
+        run_path = f'{run_dir}/up-tau={update_tau}_d={degree}_frac={r_factor_}'
+        data = pd.read_hdf(f'{run_path}/metrics.h5', key='data')
+        
+        duration = data['duration']
+        successes = get_successes( duration )
+        eps = 1 + np.arange(len(duration))
+
+        label = r'$\rho'
+        label = f'{label}={r_factor_:.2f}$'
+        l = ax[1].plot(eps, successes, label=label)
+        ax[0].scatter(eps, duration, s=10, marker=marker[i], facecolors='none', edgecolors=l[0].get_color())
+  
+    ax[0].set_xlabel('Episode')
+    ax[0].set_ylabel('Duration')
+    ax[1].set_xlabel('Episode')
+    ax[1].set_ylabel('Successes by then')
+    ax[1].legend()
+    plt.savefig( f'{fig_path}/comparison.png' )
 
 
 def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4):
@@ -325,7 +374,10 @@ def gen_plots(run_path, agent):
         duration = f['duration'] # duration of the training in mins
 
     if agent[0:3] == 'dqn':
-        plot_dqn( data, eps, fig_path )
+        if agent[4:] == 'vanilla':
+            plot_vanilla_dqn( data, eps, fig_path )
+        else :
+            plot_dqn( data, eps, fig_path )
     elif agent == 'random':
         plot_random( data, eps, fig_path )
     elif agent == 'dyna':
