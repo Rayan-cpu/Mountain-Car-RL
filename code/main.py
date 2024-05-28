@@ -18,25 +18,22 @@ def init_agent( configs ):
     run_dir = f'{runs_dir}/{agent_name}'
     run_path = ''
     
+    bool_dyna = False
     if agent_name == 'random':
-        bool_dyna = False
         just_for_syntax = configs['General']['n_episodes']
         run_path = f'{run_dir}/n_eps={just_for_syntax}'
         return agents.RandomAgent(), run_path, bool_dyna 
     elif agent_name == 'dqn_vanilla':
-        bool_dyna = False
         up_tau = configs['DQN']['Qs_NN_update_period']
         run_path = f'{run_dir}/up-tau={up_tau}'
         return agents.DQNVanilla( update_period=up_tau ), run_path, bool_dyna
     elif agent_name == 'dqn_heuristic':
-        bool_dyna = False
         up_tau = configs['DQN']['Qs_NN_update_period']
         degree = configs['Heuristic']['degree']
         frac = configs['Heuristic']['reward_scale']
         run_path = f'{run_dir}/up-tau={up_tau}_d={degree}_frac={frac}'
         return agents.DQNAgentHeuristic( degree=degree, frac=frac, update_period=up_tau ), run_path,bool_dyna
     elif agent_name == 'dqn_rnd':
-        bool_dyna = False
         up_tau = configs['DQN']['Qs_NN_update_period']
         reward_factor = configs['RND']['reward_factor']
         run_path = f'{run_dir}/up-tau={up_tau}_r-fact={reward_factor}'
