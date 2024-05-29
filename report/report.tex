@@ -81,7 +81,7 @@
         The main parameter that will be varied in this section is this section is the size factor $\alpha$. We take as a reference of the step sizes the vector suggested in the project description ($\Delta x_0, \Delta v_0$) = (0.025, 0.005). We then test discretizations of the form ($\Delta x, \Delta v$) = $\alpha$ ($\Delta x_0, \Delta v_0$) 
         for different values of $\alpha$.
 
-        \subsection{Dyna manages to solve the task!}
+        \subsection{Dyna manages to solve the task for some values of $\alpha$ !}
         When considering the original discrtization ($\alpha=1$), we observe that the task is solved, in the sense that successes (defined by episodes where the target is reached before 200 steps) are observed. 
         As in the previous sections, we plot the duration of each episode during the training, as well as the number of success with respect to the number of episodes. 
         In Figure \ref{dyna_first}, we show the result for $\alpha=1.5$ considered as a value allowing a good training (better than $\alpha=1$). We also plot results for values $\alpha=0.55$ and $\alpha=4.5$. 
@@ -93,9 +93,24 @@
             \label{dyna-first}
         \end{figure}
         
-        Value $\alpha=1.5$ shows a good performance as first successes are observed before 200 epsiodes. Then the line of success becomes wrt to the number of epsiodes becomes a line of slope 1. 
+        Value $\alpha=1.5$ shows a good performance as first successes are observed before 200 epsiodes. Then the line of success wrt to the number of epsiodes becomes, for higher number of episodes, a line of slope 1. Interestingly, for that discretuzation size, a pattern (that will be discussed later) appears. For a lower value $\alpha=0.55$ (fine grained discretization), performance is affected in the following way: the first seccesses are observed only after around 350 epsiodes, and the curve becomes a line of slope lower than 1 (meaning that even after a high number of iterations, some episodes are failures). 
+        Value $\alpha=4.5$ also shows a low perfomance as the number of successes starts stagnating (less than 150 successes are observed after 1000 episodes). 
+        For even too high values like $\alpha=8$, no success is observed in the window of the 1000 first episodes. This is due to the fact that ???.
+        In the same way, for too low values like $\alpha=0.3$ no success is observed within the 1000 first episodes. Explanation ???. 
+        % put the matrix of counts ? saying that it didnt explore much of the space ? 
+        \begin{wrapfigure}[h]
+            \includegraphics[width=0.9\textwidth]{../runs/dyna/dyna-k=3-ss_coef=1.5/figs/log_Q_value_changes.png}
+             \caption{ }
+       \end{wrapfigure}
 
+    
 
+        \subsection{Intuitive explanation}
+        Having discretized the space, we dictate to the agent which action to take based on its projection on the grid of states. 
+        The main advantage that this allows lies in the fact that 
+
+        \subsection{Bonus}
+        \subsection{Note on varying $k$}
         \section{Conclusion}
 
         \section{Appendix}

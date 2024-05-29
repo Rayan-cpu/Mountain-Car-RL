@@ -677,6 +677,7 @@ class DynaAgent(Agent):
         Q_matrix_end = self.Q_value_final_format(self.Q_matrix)
         pos_axis_plot = self.discrete_positions_attribute
         vel_axis_plot = self.discrete_velocities_attribute
+
         Count_matrix = self.Counts_final_format(self.Count_matrix)
 
         characteristic_trajectory_1 = self.characteristic_trajectory_1
