@@ -76,8 +76,26 @@
           * implementation of target net was done with help of chat gpt (command to import the weights from another net)
         \subsection{Comparison to heuristic reward}
         * difference in behaviour : we oscillate between the two possible solutions. This can be explained by the fact that the RND reward penalises the agent for repeating moves, and therefore leads the agent to switch its method more. 
-        \section{Dyna}
-        \subsection{Dyna solves the task... for some }
+    \section{Dyna}
+        The Dyna algorithm relies on the discretization of the phase space (space of positions and velocities).
+        The main parameter that will be varied in this section is this section is the size factor $\alpha$. We take as a reference of the step sizes the vector suggested in the project description ($\Delta x_0, \Delta v_0$) = (0.025, 0.005). We then test discretizations of the form ($\Delta x, \Delta v$) = $\alpha$ ($\Delta x_0, \Delta v_0$) 
+        for different values of $\alpha$.
+
+        \subsection{Dyna manages to solve the task!}
+        When considering the original discrtization ($\alpha=1$), we observe that the task is solved, in the sense that successes (defined by episodes where the target is reached before 200 steps) are observed. 
+        As in the previous sections, we plot the duration of each episode during the training, as well as the number of success with respect to the number of episodes. 
+        In Figure \ref{dyna_first}, we show the result for $\alpha=1.5$ considered as a value allowing a good training (better than $\alpha=1$). We also plot results for values $\alpha=0.55$ and $\alpha=4.5$. 
+        
+        \begin{figure}[h]
+            \centering
+            \includegraphics[width=0.9\textwidth]{../runs/dyna/dyna_comparison.png}
+            \caption{}
+            \label{dyna-first}
+        \end{figure}
+        
+        Value $\alpha=1.5$ shows a good performance as first successes are observed before 200 epsiodes. Then the line of success becomes wrt to the number of epsiodes becomes a line of slope 1. 
+
+
         \section{Conclusion}
 
         \section{Appendix}
