@@ -120,33 +120,54 @@ def main(config_file):
     print(f'Done plotting !')
 
 def compare_performances( n_eps=1000 ):
-    dqn_heuristic = agents.DQNAgentHeuristic( load_from='runs/dqn_heuristic/up-tau=3_d=2_frac=0.01/trained_model')
-    dqn_vanilla = agents.DQNVanilla( load_from='runs/dqn_vanilla/up-tau=3/trained_model')
+    dqn_heuristic = agents.DQNAgentHeuristic( load_from='../runs/dqn_heuristic/up-tau=3_d=2_frac=0.1/trained_model')
+    dqn_vanilla = agents.DQNVanilla( load_from='../runs/dqn_vanilla/up-tau=3/trained_model')
     #dqn_rnd = agents.DQNAgentRND( load_from='runs/dqn_rnd/up-tau=3_r-fact=0.01/trained_model')
     #dyna = agents.DynaAgent( load_from='runs/dyna/dyna-k=5-ss_coef=0.1/trained_model')
 
     env = gym.make('MountainCar-v0')
     seeds = np.arange(n_eps)
     results = np.zeros((n_eps, 3))
+    sampling = n_eps // 10
+    print('Starting comparison ...')
 
     for i in range(n_eps):
-        env.reset( seed=seeds[i] )
+        seed = int(seeds[i])
+        env.reset( seed=seed )
         results[i, 0] = dqn_heuristic.run_episode(env)['duration']
-        env.reset( seed=seeds[i] )
+        env.reset( seed=seed )
         results[i, 1] = dqn_vanilla.run_episode(env)['duration']
         #results[i, 1] = dqn_rnd.run_episode(env)['duration']
         #env.reset( seed=seeds[i] )
         #results[i, 2] = dyna.run_episode(env)['duration']
+        if i % sampling == 0:
+            print(f'{i/n_eps*100:.1f} % of episodes done')
+    print('Done with comparison !')
 
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.plot(results[:, 0], label='DQN Heuristic')
+    plt.plot(results[:, 1], label='DQN Vanilla')
+    plt.savefig('comparison.png')
     pass
 
 if __name__ == '__main__':
     # faire arriver les arugments du config 
     parser = argparse.ArgumentParser(description='Your script description')
     parser.add_argument('-f', '--config-file', type=str, help='Path to the configuration file', required=True)
+    parser.add_argument('-c', '--comparison', type=bool, help='Wheather to run the comparison', required=False)
     args = parser.parse_args()
     # args.config_file est un nom de file 
     main(args.config_file)
+    
+    # if comparison is given as an argument then run the comparison
+    try:
+        print('foo')
+        if args.comparison:
+            compare_performances()
+    except:
+        print('Something went wrong with the comparison !')
+        pass
 
 
 

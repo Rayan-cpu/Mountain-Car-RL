@@ -19,8 +19,8 @@ def auxiliar_r( self, batch, n, frac ):
     return frac * a * ( (batch[:,0]-x_start) ** n ) * is_on_right + torch.logical_not(is_on_right) * 0. # if the agent is on the left, the reward is 0
 
 with h5py.File( out_file + '.hdf5', 'w' ) as file:
-    file.create_dataset( 'data_name1', data = data1 )
-    file.create_dataset( 'data_name2', data = data2 )
+    file.create_dataset( 'dic1', data = data1 )
+    file.create_dataset( 'dic2', data = data2 )
 
 '''
 
