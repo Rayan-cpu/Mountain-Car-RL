@@ -127,7 +127,35 @@ def heuristic_comparison( r_factor ):
     ax[1].set_xlabel('Episode')
     ax[1].set_ylabel('Successes by then')
     ax[1].legend()
-    plt.savefig( f'{fig_path}/comparison.png' )
+    plt.savefig( f'{fig_path}/heuristic_comparison.png' )
+
+
+def dyna_comparison( size_factors ):
+    k = 3
+    run_dir = f'../runs/dyna'
+    fig_path = f'{run_dir}'
+
+    fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+    marker = ['.', '>','<']
+    for i,ss_factor_ in enumerate(size_factors):
+        run_path = f'{run_dir}/dyna-k={k}-ss_coef={ss_factor_}'
+        data = pd.read_hdf(f'{run_path}/metrics.h5', key='data')
+        
+        duration = data['duration']
+        successes = get_successes( duration )
+        eps = 1 + np.arange(len(duration))
+
+        label = f'{ss_factor_:.2f}'
+        l = ax[1].plot(eps, successes, label=label)
+        ax[0].scatter(eps, duration, s=10, marker=marker[i], facecolors='none', edgecolors=l[0].get_color())
+  
+    ax[0].set_xlabel('Episode')
+    ax[0].set_ylabel('Duration')
+    ax[1].set_xlabel('Episode')
+    ax[1].set_ylabel('Successes by then')
+    ax[1].legend(title=r'Size factor $\alpha$')
+    plt.savefig( f'{fig_path}/dyna_comparison.png' )
+
 
 
 def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4):
@@ -149,6 +177,7 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
     Q_values_changes_smooth = np.convolve(data['ep_Q_values_change'], np.ones(smoothing_Q_values)/smoothing_Q_values, mode='valid')
     plt.figure(figsize=(11, 6),layout='tight')
     plt.plot(Q_values_changes_smooth)
+    plt.xscale('log')
     plt.yscale('log')
     plt.xlabel('Episode')
     plt.ylabel(r'$\Delta Q$')
@@ -400,6 +429,7 @@ def gen_plots(run_path, agent):
 
         plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4)
         plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic_Q_1,characteristic_Q_2,characteristic_Q_3,final_Q_matrix,characteristic_Count_1,characteristic_Count_2,characteristic_Count_3,Count_matrix)
+        dyna_comparison( [0.55, 1.5,4.5] )
     
 
 
