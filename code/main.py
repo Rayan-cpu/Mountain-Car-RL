@@ -155,19 +155,15 @@ if __name__ == '__main__':
     # faire arriver les arugments du config 
     parser = argparse.ArgumentParser(description='Your script description')
     parser.add_argument('-f', '--config-file', type=str, help='Path to the configuration file', required=True)
-    parser.add_argument('-c', '--comparison', type=bool, help='Wheather to run the comparison', required=False)
+    parser.add_argument('-c', '--comparison', type=bool, help='Wheather to run the comparison', required=False, default=False)
     args = parser.parse_args()
     # args.config_file est un nom de file 
     main(args.config_file)
     
     # if comparison is given as an argument then run the comparison
-    try:
-        print('foo')
-        if args.comparison:
-            compare_performances()
-    except:
-        print('Something went wrong with the comparison !')
-        pass
+    if args.comparison:
+        print(args.comparison)
+        compare_performances()
 
 
 

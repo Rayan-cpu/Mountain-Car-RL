@@ -41,7 +41,7 @@ def plot_vanilla_dqn( data, eps, fig_path ):
     ep_loss = np.convolve( data['ep_loss'], np.ones(smoothing)/smoothing, mode='valid' )
     ep_env_reward = np.convolve(data['ep_env_reward'], np.ones(smoothing)/smoothing, mode='valid')
 
-    fig, ax = plt.subplots( 1, 3, figsize=(16, 6), layout='tight' )
+    fig, ax = plt.subplots( 1, 3, figsize=(16, 5), layout='tight' )
     ax[0].scatter(eps, data['duration'])
     ax[0].set_xlabel('Episode')
     ax[0].set_ylabel('Duration')
@@ -67,7 +67,7 @@ def plot_dqn( data, eps, fig_path ):
     cumsum_env_reward = np.cumsum(data['ep_env_reward'])
     cumsum_reward = cumsum_aux_reward + cumsum_env_reward
 
-    fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+    fig, ax = plt.subplots( 1, 2, figsize=(11, 5), layout='tight' )
 
     ax[0].scatter(eps, data['duration'])
     ax[0].set_xlabel('Episode')
@@ -79,7 +79,7 @@ def plot_dqn( data, eps, fig_path ):
     ax[1].set_ylabel('Successes by then')
     plt.savefig( f'{fig_path}/duration.png' )
 
-    fig, ax_r = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+    fig, ax_r = plt.subplots( 1, 2, figsize=(11, 5), layout='tight' )
     ax_r[0].plot(ep_env_reward, label='Environment')
     ax_r[0].plot(ep_aux_reward, label='Auxiliary')
     ax_r[0].plot(ep_env_reward + ep_aux_reward, label='Total')
@@ -107,7 +107,7 @@ def heuristic_comparison( r_factor ):
     run_dir = f'../runs/dqn_heuristic'
     fig_path = f'{run_dir}'
 
-    fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+    fig, ax = plt.subplots( 1, 2, figsize=(11, 5), layout='tight' )
     marker = ['.', '^']
     for i,r_factor_ in enumerate(r_factor):
         run_path = f'{run_dir}/up-tau={update_tau}_d={degree}_frac={r_factor_}'
@@ -135,7 +135,7 @@ def dyna_comparison( size_factors ):
     run_dir = f'../runs/dyna'
     fig_path = f'{run_dir}'
 
-    fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+    fig, ax = plt.subplots( 1, 2, figsize=(11, 5), layout='tight' )
     marker = ['.', '>','<']
     for i,ss_factor_ in enumerate(size_factors):
         run_path = f'{run_dir}/dyna-k={k}-ss_coef={ss_factor_}'
@@ -161,7 +161,7 @@ def dyna_comparison( size_factors ):
 def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4):
     successes = get_successes( data['duration'] )
 
-    fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+    fig, ax = plt.subplots( 1, 2, figsize=(11, 5), layout='tight' )
     ax[0].scatter(eps, data['duration'])
     ax[0].set_xlabel('Episode')
     ax[0].set_ylabel('Duration')
@@ -175,7 +175,7 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
     # the logarithm of the Q values 
     smoothing_Q_values = 20 # to smooth the q-values
     Q_values_changes_smooth = np.convolve(data['ep_Q_values_change'], np.ones(smoothing_Q_values)/smoothing_Q_values, mode='valid')
-    plt.figure(figsize=(11, 6),layout='tight')
+    plt.figure(figsize=(11, 5),layout='tight')
     plt.plot(Q_values_changes_smooth)
     plt.xscale('log')
     plt.yscale('log')
@@ -186,7 +186,7 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
     # the normal Q values
     smoothing_Q_values = 20 # to smooth the q-values
     Q_values_changes_smooth = np.convolve(data['ep_Q_values_change'], np.ones(smoothing_Q_values)/smoothing_Q_values, mode='valid')
-    plt.figure(figsize=(11, 6),layout='tight')
+    plt.figure(figsize=(11, 5),layout='tight')
     plt.plot(Q_values_changes_smooth)
     plt.xlabel('Episode')
     plt.ylabel(r'$\Delta Q$')
@@ -195,7 +195,7 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
     # draw the total reward per episode !
     smoothing_reward = 10 # to smooth the reward
     avg_reward_changes_smooth = np.convolve(data['ep_env_reward'], np.ones(smoothing_reward)/smoothing_reward, mode='valid')
-    plt.figure(figsize=(11, 6),layout='tight')
+    plt.figure(figsize=(11, 5),layout='tight')
     plt.plot(avg_reward_changes_smooth)
     plt.xlabel('Episode')
     plt.ylabel(r'Reward per episode')
@@ -205,7 +205,7 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
     cumsum_aux_reward = np.cumsum(data['ep_env_reward'])
     smoothing_reward = 10 # to smooth the q-values
     cum_changes_smooth = np.convolve(cumsum_aux_reward, np.ones(smoothing_reward)/smoothing_reward, mode='valid')
-    plt.figure(figsize=(11, 6),layout='tight')
+    plt.figure(figsize=(11, 5),layout='tight')
     plt.plot(cum_changes_smooth)
     plt.xlabel('Episode')
     plt.ylabel(r'Cumulated rewards per episode')
@@ -251,7 +251,7 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
     vel_axis_labels = [round_to_three_significant_digits(val) for val in vel_ticks_values]
 
     # Figure Q_value_1 ----------------------------------------------------------------------------------
-    fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
     plt.subplots_adjust(wspace=0.3)
     im0 = ax[0].imshow(characteristic_Q_1.T, cmap='viridis', aspect='auto')
     fig.colorbar(im0, ax=ax[0])  # Add a colorbar to the first subplot
@@ -284,7 +284,7 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
     plt.savefig(f'{fig_path}/Q1_matrix.png')
 
     # Figure Q_value_2 ----------------------------------------------------------------------------------
-    fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
     plt.subplots_adjust(wspace=0.3)
     im0 = ax[0].imshow(characteristic_Q_2.T, cmap='viridis', aspect='auto')
     fig.colorbar(im0, ax=ax[0])  # Add a colorbar to the first subplot
@@ -317,7 +317,7 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
     plt.savefig(f'{fig_path}/Q2_matrix.png')
 
     # Figure Q_value_3 ----------------------------------------------------------------------------------
-    fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
     plt.subplots_adjust(wspace=0.3)
     im0 = ax[0].imshow(characteristic_Q_3.T, cmap='viridis', aspect='auto')
     fig.colorbar(im0, ax=ax[0])  # Add a colorbar to the first subplot
@@ -350,7 +350,7 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
     plt.savefig(f'{fig_path}/Q3_matrix.png')
 
     # Figure Q_value_final ----------------------------------------------------------------------------------
-    fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
     plt.subplots_adjust(wspace=0.3)
     im0 = ax[0].imshow(final_Q_matrix.T, cmap='viridis', aspect='auto')
     fig.colorbar(im0, ax=ax[0])  # Add a colorbar to the first subplot
