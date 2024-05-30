@@ -18,7 +18,7 @@ def transform_range(values, a, b, c, d):
     for i,value in enumerate(values): 
         scale = (d - c) / (b - a)
         new_values[i] = c + (value - a) * scale
-    return new_values
+    return new_values 
 
 def round_to_three_significant_digits(number):
     rounded_number = np.round(1000*number)/1000
