@@ -2,6 +2,7 @@ import random
 import torch 
 import torch.nn as nn
 
+
 class MLP( nn.Module ):
     '''
     Multi-layer perceptron class. It is a simple feed-forward neural network with 2 hidden layers of size 64 and ReLU activation functions.
@@ -52,3 +53,4 @@ class ReplayBuffer():
         batch_ind = random.sample( range(self.len), batch_size ) 
         batch = self.values[batch_ind,:]
         return batch
+    

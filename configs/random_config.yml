@@ -1,6 +1,0 @@
-General : 
-  agent_type : random # dqn_vanilla, dqn_heuristic, dqn_rnd, random, dyna
-  n_episodes : 100
-
-Files :
-  runs_dir : ../runs

@@ -305,7 +305,9 @@ class DQNAgentHeuristic(DQNAgent):
         return is_on_right * ( a * (x-x_start) ** self.degree ) - offset
         '''
         h = 0.5 * ( 1 - np.cos( np.pi * ( x - x_start ) / ( x_reward - x_start ) ) )
-        return self.frac * ( h ** self.degree - 1 )
+        offset = 0.
+        #offset = 1.
+        return self.frac * ( h ** self.degree - offset )
 
 
 
