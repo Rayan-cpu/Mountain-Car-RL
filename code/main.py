@@ -10,8 +10,6 @@ import os
 import shutil
 import analyse # to generate the plots
 
-print('Running')
-
 def init_agent( configs ):
     runs_dir = configs['Files']['runs_dir'] # la ou on conserve les resultas
     agent_name = configs['General']['agent_type']
@@ -50,6 +48,8 @@ def init_agent( configs ):
         raise ValueError(f'Agent {agent_name} not found')
 
 def main(config_file, colab):
+    print('Running')
+
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file) # lire le config file  
 
