@@ -74,5 +74,39 @@ def conda_to_pip_requirements(yaml_file, requirements_file):
         for dep in pip_deps:
             req_file.write(dep + '\n')
 
+import json
+import os
+
+
+
 if __name__ == '__main__':
-    conda_to_pip_requirements('../requirements.yml', '../requirements.txt')
+    #conda_to_pip_requirements('../requirements.yml', '../requirements.txt')
+# Load the conda environment file
+    file_path = '../requirements.yml'
+    with open(file_path, 'r') as file:
+        conda_env = file.read()
+
+    # Parse the dependencies
+    dependencies = conda_env.split('dependencies:')[-1].strip().split('\n')
+    formatted_dependencies = []
+
+    for dep in dependencies:
+
+        if dep.startswith('- ') or dep.startswith('  - '):
+            if dep.startswith('- '):
+                dep = dep[2:].strip()
+            elif dep.startswith('  -'):
+                dep = dep[4:].strip()
+            if '=' in dep:
+                parts = dep.split('=')
+                if len(parts) >= 2:
+                    package_name = parts[0].strip()
+                    package_version = parts[1].strip()
+                    formatted_dependencies.append(f"{package_name}=={package_version}")
+       # print(dep)
+
+    # Write the formatted dependencies to requirements.txt
+    requirements_file_path = '../requirements.txt'
+    with open(requirements_file_path, 'w') as file:
+        for dep in formatted_dependencies:
+            file.write(f"{dep}\n")
