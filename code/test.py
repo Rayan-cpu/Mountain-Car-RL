@@ -1,7 +1,8 @@
+#%%
 import analyse
 
 r_factor = [1.0, 10.0]
-analyse.heuristic_comparison( r_factor )
+#analyse.heuristic_comparison( r_factor )
 
 '''
 def auxiliar_r( self, batch, n, frac ):

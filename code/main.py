@@ -49,11 +49,13 @@ def init_agent( configs ):
     else:
         raise ValueError(f'Agent {agent_name} not found')
 
-def main(config_file):
+def main(config_file, colab):
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file) # lire le config file  
 
     agent, run_path, bool_dyna = init_agent( config ) 
+    if colab:
+        run_path = f'rl-project-Rayan-Tara/code{run_path}'
     env = gym.make('MountainCar-v0')
 
     # si le path nexiste pas alors cree un folder 
@@ -158,7 +160,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--comparison', type=bool, help='Wheather to run the comparison', required=False, default=False)
     args = parser.parse_args()
     # args.config_file est un nom de file 
-    main(args.config_file)
+    main(args.config_file, False)
     
     # if comparison is given as an argument then run the comparison
     if args.comparison:

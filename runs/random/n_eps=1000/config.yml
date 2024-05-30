@@ -1,5 +1,5 @@
 General : 
-  agent_type : random # dqn_vanilla, dqn_heuristic, dqn_rnd, random, dyna
+  agent_type : random
   n_episodes : 1000
 
 Files :
