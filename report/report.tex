@@ -110,41 +110,70 @@
           * implementation of target net was done with help of chat gpt (command to import the weights from another net)
         \subsection{Comparison to heuristic reward}
         * difference in behaviour : we oscillate between the two possible solutions. This can be explained by the fact that the RND reward penalises the agent for repeating moves, and therefore leads the agent to switch its method more. 
-    \section{Dyna}
+    
+        \section{Dyna}
         The Dyna algorithm relies on the discretization of the phase space (space of positions and velocities).
         The main parameter that will be varied in this section is this section is the size factor $\alpha$. We take as a reference of the step sizes the vector suggested in the project description ($\Delta x_0, \Delta v_0$) = (0.025, 0.005). We then test discretizations of the form ($\Delta x, \Delta v$) = $\alpha$ ($\Delta x_0, \Delta v_0$) 
-        for different values of $\alpha$.
+        for different values of $\alpha$. Another parameter is the number $k$ of (state,action) pairs randomly sampled among all the visited state-action pairs. We fix it to $k=3$ and we will provide a note about it at the end of this section. 
 
         \subsection{Dyna manages to solve the task for some values of $\alpha$ !}
         When considering the original discrtization ($\alpha=1$), we observe that the task is solved, in the sense that successes (defined by episodes where the target is reached before 200 steps) are observed. 
         As in the previous sections, we plot the duration of each episode during the training, as well as the number of success with respect to the number of episodes. 
-        In Figure \ref{dyna_first}, we show the result for $\alpha=1.5$ considered as a value allowing a good training (better than $\alpha=1$). We also plot results for values $\alpha=0.55$ and $\alpha=4.5$. 
+        In Figure ???, we show the result for $\alpha=1.5$ considered as a value allowing a good training (better than $\alpha=1$). We also plot results for values $\alpha=0.55$ and $\alpha=4.5$. 
         
         \begin{figure}[h]
             \centering
             \includegraphics[width=0.9\textwidth]{../runs/dyna/dyna_comparison.png}
             \caption{}
-            \label{dyna-first}
         \end{figure}
         
-        Value $\alpha=1.5$ shows a good performance as first successes are observed before 200 epsiodes. Then the line of success wrt to the number of epsiodes becomes, for higher number of episodes, a line of slope 1. Interestingly, for that discretuzation size, a pattern (that will be discussed later) appears. For a lower value $\alpha=0.55$ (fine grained discretization), performance is affected in the following way: the first seccesses are observed only after around 350 epsiodes, and the curve becomes a line of slope lower than 1 (meaning that even after a high number of iterations, some episodes are failures). 
+        Value $\alpha=1.5$ shows a good performance as first successes are observed before 200 epsiodes. Then the line of success wrt to the number of epsiodes becomes, for higher number of episodes, a line of slope 1. Interestingly, for that discretuzation size, a pattern (that will be discussed later) appears. For a lower value $\alpha=0.55$ (fine grained discretization), performance is affected in the following way: the first successes are observed only after around 350 epsiodes, and the curve becomes a line of slope lower than 1 (meaning that even after a high number of iterations, some episodes are failures). 
         Value $\alpha=4.5$ also shows a low perfomance as the number of successes starts stagnating (less than 150 successes are observed after 1000 episodes). 
         For even too high values like $\alpha=8$, no success is observed in the window of the 1000 first episodes. This is due to the fact that ???.
         In the same way, for too low values like $\alpha=0.3$ no success is observed within the 1000 first episodes. Explanation ???. 
         % put the matrix of counts ? saying that it didnt explore much of the space ? 
-        \begin{wrapfigure}[h]
-            \includegraphics[width=0.9\textwidth]{../runs/dyna/dyna-k=3-ss_coef=1.5/figs/log_Q_value_changes.png}
-             \caption{ }
-       \end{wrapfigure}
 
-    
+       
+        \begin{wrapfigure}{r}{0.6\textwidth}
+            \centering
+            \vspace{-1em}
+            \includegraphics[width=0.6\textwidth]{../runs/dyna/dyna-k=3-ss_coef=1.5_eps=10000/figs/log_Q_value_changes.png}
+            \caption{}
+        \end{wrapfigure}
 
-        \subsection{Intuitive explanation}
+        At each episode one can compute the euclidean distance between the matrices $Q$ before and after the episode. This will provide a measure of the Q-value update. Figure ??? shows the evolution of that the Q-value update step for a simulation with 10000 episodes, using the most suitable value $\alpha=1.5$ among the ones that we have tested. As before, we consider $k=3$. Notice that the $y$-axis is in log-scale
+        As expected, one can see that the Q-value update step overall decreases with the increase of the number of episodes. This indicates that the update equation: $Q(s,a) \leftarrow \hat{R}(s,a) + \gamma \sum_{s'} \hat{P}_{s,a}(s') \max_{a'}Q(s',a')$ is converging towards a fixed point. The decreasing is however not monotonic. Peaks are observed and correspond to moments at which the estimation of the $Q$ values undergoes a big change, corresponding to the agent learning new strategies (or perfecting). Notice that the decrease of $\Delta Q$ does not plateau at the last episodes (setting the $x$-axis to a log scale allows to see that the decrease continues).
+        
+
+        
+
+        \subsection{Intuitive explanation on why it works}
         Having discretized the space, we dictate to the agent which action to take based on its projection on the grid of states. 
         The main advantage that this allows lies in the fact that 
 
+
+
+
+        \subsection{$Q$ values table and characteristic trajectories}
+        In the following, we show the estimation of the $Q$ values after the learning. In Figure \ref{Qmatrixcounts}, we represent for each state $s$ (located by a position and a velocity) the value $\max_a Q(s,a)$. On top, we represent three trajectories each corresponding to one the groups of episodes described above. 
+        The second subplot indicated the set of states that have been visited (1 if visited and 0 if not). Last part of the figure shows the the number of times each of the states has been visited. Simulation done for 3000 episodes, $k=3$ and $\alpha=1.5$.
+        We choose to represent the three trajectories in the same plot in order to save space in the report.
+
+        \begin{figure}[h]
+            \centering
+            \includegraphics[width=1\textwidth]{../runs/dyna/dyna-k=3-ss_coef=1.5_eps=3000/figs/Q_final_matrix.png}
+            \caption{Qmatrixcounts}
+        \end{figure}
+
+        Interestingly, the plot of $Q$-values shows a spiral starting at the bottom of the mountain and velocity 0. The spiraling behavior is followed by the trajectories represented. One can notice that in the lower part (positive velocities), when approaching to goal position, the $\max_a Q(s,a)$ values start approchaing zero values. This means that being present in those states, one would not expect to recieve a lot of negative reward before the end of the episode, in other words, the state easily leads to the goal.  
+        % On the extreme left (and negative velocities), quantity $\max_a Q(s,a)$ has the same value, and this is due to the fact that all those states are "immediate predecessors" of the state on the extreme left position and velocity 0. This is because when the car hits the wall, its velocity immediately drops to zero. 
+        Matrix of counts illustrates the fact that after 3000 epsiodes, most occupied states are disposed in spirals. Interestingly, a peak of count can be seen at the extreme left position and zero velocity, corresponding to cases where the car hits the wall. 
+
+        
+
         \subsection{Bonus}
         \subsection{Note on varying $k$}
+
         \section{Conclusion}
 
         \section{Appendix}

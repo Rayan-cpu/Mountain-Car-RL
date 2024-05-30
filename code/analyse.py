@@ -12,6 +12,13 @@ plt.rc( 'xtick', labelsize=12 )
 plt.rc( 'ytick', labelsize=12 )
 plt.rc( 'legend',fontsize=12 ) 
 
+def transform_range(values, a, b, c, d):
+    new_values = np.zeros(len(values))
+    for i,value in enumerate(values): 
+        scale = (d - c) / (b - a)
+        new_values[i] = c + (value - a) * scale
+    return new_values
+
 def round_to_three_significant_digits(number):
     rounded_number = np.round(1000*number)/1000
     return rounded_number
@@ -156,7 +163,7 @@ def dyna_comparison( size_factors ):
 
 
 
-def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4):
+def plot_dyna( data, eps, fig_path,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4):
     successes = get_successes( data['duration'] )
 
     fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
@@ -191,8 +198,8 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
     plt.ylabel(r'$\Delta Q$')
     plt.savefig( f'{fig_path}/Q_value_changes.png' )
 
-    # draw the total reward per episode !
-    smoothing_reward = 10 # to smooth the reward
+    # draw the total reward per episode ! !!!!
+    smoothing_reward = 20 # to smooth the reward
     avg_reward_changes_smooth = np.convolve(data['ep_env_reward'], np.ones(smoothing_reward)/smoothing_reward, mode='valid')
     plt.figure(figsize=(11, 6),layout='tight')
     plt.plot(avg_reward_changes_smooth)
@@ -200,16 +207,24 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
     plt.ylabel(r'Reward per episode')
     plt.savefig( f'{fig_path}/Rewards.png' )
 
-    # draw the cumulated reward per episode !
+    # draw the cumulated reward per episode ! 
     cumsum_aux_reward = np.cumsum(data['ep_env_reward'])
-    smoothing_reward = 10 # to smooth the q-values
     cum_changes_smooth = np.convolve(cumsum_aux_reward, np.ones(smoothing_reward)/smoothing_reward, mode='valid')
     plt.figure(figsize=(11, 6),layout='tight')
     plt.plot(cum_changes_smooth)
     plt.xlabel('Episode')
-    plt.ylabel(r'Cumulated rewards per episode')
+    plt.ylabel(r'Cumulative reward')
     plt.savefig( f'{fig_path}/Cumulated_Rewards.png' )
 
+    # draw both rewards : 
+    fig, ax = plt.subplots( 1, 2, figsize=(11, 6), layout='tight' )
+    ax[0].plot(avg_reward_changes_smooth)
+    ax[0].set_xlabel('Episode')
+    ax[0].set_ylabel(r'Reward per episode')
+    ax[1].plot(cum_changes_smooth)
+    ax[1].set_xlabel('Episode')
+    ax[1].set_ylabel(r'Cumulative reward')
+    plt.savefig( f'{fig_path}/reward_both_figs.png' )
 
     # Plot the four trajectories : 
     x_min = -1.2
@@ -235,7 +250,7 @@ def plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_tr
 
     pass
 
-def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic_Q_1,characteristic_Q_2,characteristic_Q_3,final_Q_matrix,characteristic_Count_1,characteristic_Count_2,characteristic_Count_3,Count_matrix):
+def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic_Q_1,characteristic_Q_2,characteristic_Q_3,final_Q_matrix,characteristic_Count_1,characteristic_Count_2,characteristic_Count_3,Count_matrix,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4):
 
     # Round tick values to 3 significant digits
     pos_ticks_indices = np.linspace(0, len(pos_axis_plot) - 1, 3).astype(int)
@@ -315,7 +330,7 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
     plt.savefig(f'{fig_path}/Q2_matrix.png')
 
     # Figure Q_value_3 ----------------------------------------------------------------------------------
-    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
+    fig, ax = plt.subplots(1, 3, figsize=(14, 6))
     plt.subplots_adjust(wspace=0.3)
     im0 = ax[0].imshow(characteristic_Q_3.T, cmap='viridis', aspect='auto')
     fig.colorbar(im0, ax=ax[0])  # Add a colorbar to the first subplot
@@ -348,10 +363,18 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
     plt.savefig(f'{fig_path}/Q3_matrix.png')
 
     # Figure Q_value_final ----------------------------------------------------------------------------------
+    # translate positions in -1.2,0.6 to 0, number of positions
+    characteristic_trajectory_2_pos=transform_range(characteristic_trajectory_2[:,0],-1.2,0.6,0,len(pos_axis_plot)-1)
+    characteristic_trajectory_3_pos=transform_range(characteristic_trajectory_3[:,0],-1.2,0.6,0,len(pos_axis_plot)-1)
+    characteristic_trajectory_4_pos=transform_range(characteristic_trajectory_4[:,0],-1.2,0.6,0,len(pos_axis_plot)-1)
+    characteristic_trajectory_2_vel=-transform_range(characteristic_trajectory_2[:,1],-0.07,0.07,len(vel_axis_plot)-1,0)
+    characteristic_trajectory_3_vel=-transform_range(characteristic_trajectory_3[:,1],-0.07,0.07,len(vel_axis_plot)-1,0)
+    characteristic_trajectory_4_vel=-transform_range(characteristic_trajectory_4[:,1],-0.07,0.07,len(vel_axis_plot)-1,0)
+
     fig, ax = plt.subplots(1, 3, figsize=(16, 5))
     plt.subplots_adjust(wspace=0.3)
     im0 = ax[0].imshow(final_Q_matrix.T, cmap='viridis', aspect='auto')
-    fig.colorbar(im0, ax=ax[0])  # Add a colorbar to the first subplot
+    fig.colorbar(im0, ax=ax[0]) # Add a colorbar to the first subplot
     ax[0].set_title('Q values')
     ax[0].set_xlabel('position')
     ax[0].set_ylabel('velocity')
@@ -359,6 +382,19 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
     ax[0].set_xticklabels(labels=pos_axis_labels)
     ax[0].set_yticks(ticks=vel_ticks_indices)
     ax[0].set_yticklabels(labels=vel_axis_labels)
+
+    ax[0].scatter(characteristic_trajectory_2_pos,characteristic_trajectory_2_vel+(len(vel_axis_plot)-1)*np.ones(len(characteristic_trajectory_2_vel)),color='b',label='T1')
+    ax[0].scatter(characteristic_trajectory_3_pos,characteristic_trajectory_3_vel+(len(vel_axis_plot)-1)*np.ones(len(characteristic_trajectory_3_vel)),color='yellow',label='T2')
+    ax[0].scatter(characteristic_trajectory_4_pos,characteristic_trajectory_4_vel+(len(vel_axis_plot)-1)*np.ones(len(characteristic_trajectory_4_vel)),color='m',label='T3')
+    limits = transform_range([0.5,-0.5],-1.2,0.6,1,len(pos_axis_plot))
+    ax[0].axvline(x=limits[0], color='r', linestyle='--', )
+    ax[0].axvline(x=limits[1], color='k', linestyle='--',alpha=0.2)
+    ax[0].legend()
+    #ax[0].set_xlim([0,len(pos_axis_plot)])
+    #ax[0].set_ylim([0,len(vel_axis_plot)])
+    #ax[0].set_xlim([min(characteristic_trajectory_2_pos),max(characteristic_trajectory_2_pos)])
+    #ax[0].set_ylim([min(characteristic_trajectory_2_vel),max(characteristic_trajectory_2_vel)])
+    
 
     visited_matrix=np.where(Count_matrix!=0,1,0)
     im1 = ax[1].imshow(visited_matrix.T, cmap='viridis', aspect='auto')
@@ -374,6 +410,7 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
     #min_value = Count_matrix.min()
     #max_value_60_percent = 0.5 * Count_matrix.max()
     #Count_matrix = np.clip(Count_matrix, min_value, max_value_60_percent)
+    #Count_matrix = 1/(max(Count_matrix))*Count_matrix
     im2 = ax[2].imshow(Count_matrix.T, cmap='viridis', aspect='auto')
     fig.colorbar(im2, ax=ax[2])  # Add a colorbar to the second subplot
     ax[2].set_title('Count matrix')
@@ -425,8 +462,8 @@ def gen_plots(run_path, agent):
             characteristic_Count_2 = f['characteristic_Count_2'][:]
             characteristic_Count_3 = f['characteristic_Count_3'][:]
 
-        plot_dyna( data, eps, fig_path,characteristic_trajectory_1,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4)
-        plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic_Q_1,characteristic_Q_2,characteristic_Q_3,final_Q_matrix,characteristic_Count_1,characteristic_Count_2,characteristic_Count_3,Count_matrix)
+        plot_dyna( data, eps, fig_path,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4)
+        plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic_Q_1,characteristic_Q_2,characteristic_Q_3,final_Q_matrix,characteristic_Count_1,characteristic_Count_2,characteristic_Count_3,Count_matrix,characteristic_trajectory_2,characteristic_trajectory_3,characteristic_trajectory_4)
         # dyna_comparison( [0.55, 1.5,4.5] )
     
 
