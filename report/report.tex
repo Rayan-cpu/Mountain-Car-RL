@@ -150,6 +150,24 @@
         Value $\alpha=1.5$ shows a good performance as first successes are observed before 200 epsiodes. Then the line of success becomes wrt to the number of epsiodes becomes a line of slope 1. 
 
 
+        
+        \section{Comparison of the agents}
+        In this section we compare heuristic and RND DQN agents to the Dyna agent. 
+        
+        We first do so for the training phase by training each of these agents for 3000 episodes, and then plotting their associated enverionement reward evolution. The results are shown in ref{...}.
+        %
+        We can see that ....
+
+        Now we compare the performances by running each of the trained agents for 1000 additional episodes in `evalutation mode', i.e. using a greedy policy. The plots of the corresponding episode durations are shown in ref{...}. To reduce stochastic fluctuations the results are made on the same environement seeds across the agents.
+        \begin{figure}[h!]
+            \centering
+            \vspace{0em}
+            \includegraphics[width=.75\textwidth]{../code/comparison}
+            \caption{Episode durations of heuristic and RND DQN agents and Dyna agent.}
+            \label{fig:agent-performance-comparison}
+        \end{figure}
+        %
+        We can see that ....
         \section{Conclusion}
         \subsection{Two types of solutions ?}
         From the plot of the episode durations, we can see that the agent seems to have two distinct behaviours. Indeed, we can see that the density of points is larger for $90<d<120$ and $150<d<180$ than in between of these ranges. Investigating this more closely (inspecting the trajectories associated to these performances), one can trace this difference back to the initial condition. 

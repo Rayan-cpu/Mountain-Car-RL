@@ -1,6 +1,7 @@
 import random
 import torch 
 import torch.nn as nn
+import yaml
 
 class MLP( nn.Module ):
     '''
@@ -52,3 +53,26 @@ class ReplayBuffer():
         batch_ind = random.sample( range(self.len), batch_size ) 
         batch = self.values[batch_ind,:]
         return batch
+    
+def conda_to_pip_requirements(yaml_file, requirements_file):
+    with open(yaml_file, 'r') as stream:
+        try:
+            env_data = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+            return
+
+    dependencies = env_data.get('dependencies', [])
+    pip_deps = []
+    for dep in dependencies:
+        if isinstance(dep, dict) and 'pip' in dep:
+            pip_deps.extend(dep['pip'])
+        elif isinstance(dep, str):
+            pip_deps.append(dep)
+
+    with open(requirements_file, 'w') as req_file:
+        for dep in pip_deps:
+            req_file.write(dep + '\n')
+
+if __name__ == '__main__':
+    conda_to_pip_requirements('../requirements.yml', '../requirements.txt')
