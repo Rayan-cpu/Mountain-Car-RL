@@ -1,6 +1,6 @@
 General : 
   agent_type : dyna
-  n_episodes : 1000
+  n_episodes : 4000
 
 Files :
   runs_dir : ../runs

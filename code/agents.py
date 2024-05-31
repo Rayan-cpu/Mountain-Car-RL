@@ -93,9 +93,6 @@ class DQNAgent(Agent) :
         self.pre_train_steps = pre_train_steps # number of GD steps on which to 
         # train the auxiliary reward before starting the DQN training
         self.update_period = update_period
-        self.char_state = []
-        self.got_char_low = False
-        self.got_char_high = False
 
         eval_mode = False
         if load_from is not None:
@@ -208,22 +205,6 @@ class DQNAgent(Agent) :
                 
         return
     
-    def save_char_states( self, duration ):
-        '''
-        Save the characteristic solutions of the environment to a file.
-        '''
-        if not self.got_char_high :
-            if duration > 150 and duration < 170:
-                self.got_char_high = True
-                self.char_state = np.array(self.char_state)
-                np.save('char_state_high.npy', self.char_state)
-        if not self.got_char_low :
-            if duration > 90 and duration < 120:
-                self.got_char_low = True
-                self.char_state = np.array(self.char_state)
-                np.save('char_state_low.npy', self.char_state)
-        self.char_state = []
-        return
     
     def run_episode( self, env ):
         state, info = env.reset()
@@ -239,8 +220,6 @@ class DQNAgent(Agent) :
             next_state, reward, terminated, truncated, _ = env.step(action)
             done = terminated or truncated
 
-            self.char_state.append( next_state )
-            #print(f'foo {self.eval_mode}')
             if not self.eval_mode:
                 self.observe(state, action, next_state, reward)
                 if done and self.iter > self.buffer.len:
@@ -250,9 +229,6 @@ class DQNAgent(Agent) :
             
             state = next_state
             results['duration'] += 1
-        
-        if not (self.got_char_low and self.got_char_high):
-            self.save_char_states(results['duration'])
 
         return results
 
@@ -313,7 +289,7 @@ class DQNAgentHeuristic(DQNAgent):
 
 class DQNAgentRND(DQNAgent) :
     def __init__(self, reward_factor=1.0, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=100, update_period=1, load_from=None):
-        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps=pre_train_steps, update_period=update_period) # have to add load_from
+        super().__init__(epsilon, gamma, buffer_len, batch_size, pre_train_steps, update_period, load_from) # have to add load_from
         self.RND = MLP( 2, 1 )
         self.RND_optimizer = torch.optim.Adam(self.RND.parameters(), lr=1e-3)
         self.RND_target = MLP( 2, 1 )
@@ -362,12 +338,6 @@ class DynaAgent(Agent):
 
     def __init__(self,k = 3, x_step=0.025,v_step=0.005, gamma=0.99, epsilon=0.9, load_from=None):
 
-        eval_mode = False
-        if load_from is not None:
-            self.Q_matrix = np.loadtxt(f'{load_from}.txt')
-            eval_mode = True
-        super().__init__(eval_mode)
-
         self.discr_step = np.array([x_step,v_step])
         self.gamma = gamma
         self.epsilon = epsilon
@@ -387,7 +357,8 @@ class DynaAgent(Agent):
         self.eps_end = 0.05 # asymptotic value for epsilon
         self.eps_tau = 100*self.full_ep_len # characteristic time for the decay
         self.iter = 0
-        self.step_index = 0
+        #self.step_index = 0
+        self.episode_number = 0
 
         # current state, action, next state and reward : 
         self.index_current_state = 0
@@ -416,10 +387,15 @@ class DynaAgent(Agent):
         self.characteristic_Count_1 = np.zeros( ( self.number_of_states , 3 ) )
         self.characteristic_Count_2 = np.zeros( ( self.number_of_states , 3 ) )
         self.characteristic_Count_3 = np.zeros( ( self.number_of_states , 3 ) )
-        self.episode_number = 0
         # final tables to print :
         self.Q_changes_list = []
         self.Rs_list = []
+        
+        eval_mode = False
+        if load_from is not None:
+            self.Q_matrix = np.loadtxt(f'{load_from}.txt')
+            eval_mode = True
+        super().__init__(eval_mode)
 
     def generate_points(self, lim_left, lim_right, step_size): # CONFIRM 
         num_steps = int((lim_right - lim_left) // step_size) # Calculate the number of steps needed to include lim_right
@@ -472,7 +448,8 @@ class DynaAgent(Agent):
         index_state = self.discretize(state) # discretize first state
         index_next_state = self.discretize(next_state) # discretize second state 
         
-        self.step_index = 0
+        #self.step_index = 0
+    
 
         hot_encoded_vector = np.zeros(self.number_of_states)
         hot_encoded_vector[index_next_state] = 1
@@ -544,8 +521,6 @@ class DynaAgent(Agent):
         # Now i will have to take k random numbers and update them ! 
         if self.k != 0:
             if non_zero_counts.shape[0] > self.k :
-                #print(self.iter)
-                #print(non_zero_counts)
                 random_indices_state_action = np.random.choice(non_zero_counts.shape[0], self.k, replace=False) # Get k random row indices (state indices)
                 selected_states = non_zero_counts[random_indices_state_action] # the set of random states i selected
 
@@ -584,34 +559,33 @@ class DynaAgent(Agent):
     # Make a matrix that would choose the 4 states to plot 
     # this matrix would check that the duration is good and that the iteration is far enough in the training :
     def store_trajectories(self, duration,table_of_states):
-        if 180 < duration < 200 and len(self.characteristic_trajectory_1) == 2 and self.iter > 2500 :
+        if 180 < duration < 200 and len(self.characteristic_trajectory_1) == 2 and self.episode_number > 3800 :
             self.characteristic_trajectory_1[:] = np.copy(table_of_states)
-        if 140 < duration < 160 and len(self.characteristic_trajectory_2) == 2 and self.iter > 2500:            
+        if 140 < duration < 160 and len(self.characteristic_trajectory_2) == 2 and self.episode_number > 3800:            
             self.characteristic_trajectory_2[:] = np.copy(table_of_states)
-        if 110 < duration < 115 and len(self.characteristic_trajectory_3) == 2 and self.iter > 2500:
+        if 110 < duration < 115 and len(self.characteristic_trajectory_3) == 2 and self.episode_number > 3800:
             self.characteristic_trajectory_3[:] = np.copy(table_of_states)
-        if 80 < duration < 90 and len(self.characteristic_trajectory_4) == 2 and self.iter > 2500:
+        if 80 < duration < 90 and len(self.characteristic_trajectory_4) == 2 and self.episode_number > 3800:
             self.characteristic_trajectory_4[:] = np.copy(table_of_states)
 
     def store_Q_matrix(self, duration): # we will change the conditions, cest temporaire
-        if 180 < duration < 200 and not self.Q1_filled:# and self.iter > 2500 :
+        if self.episode_number > 100 and not self.Q1_filled:# and self.iter > 2500 :
             self.characteristic_Q_1[:] = np.copy(self.Q_matrix)
             self.Q1_filled = True
-        if 140 < duration < 160 and not self.Q2_filled:# and self.iter > 2500:     
+        if self.episode_number > 300 and not self.Q2_filled:# and self.iter > 2500:     
             self.characteristic_Q_2[:] = np.copy(self.Q_matrix)
             self.Q2_filled = True
-        if 110 < duration < 115 and not self.Q3_filled:# and self.iter > 2500:
+        if self.episode_number > 3600 and not self.Q3_filled:# and self.iter > 2500:
             self.characteristic_Q_3[:] = np.copy(self.Q_matrix)
             self.Q3_filled = True
-
     def store_Count_matrix(self, duration): # we will change the conditions, cest temporaire
-        if 180 < duration < 200 and not self.Count1_filled:# and self.iter > 2500 :
+        if self.episode_number > 100 and not self.Count1_filled:# and self.iter > 2500 :
             self.characteristic_Count_1[:] = np.copy(self.Count_matrix)
             self.Count1_filled = True
-        if 140 < duration < 160 and not self.Count2_filled:# and self.iter > 2500:            
+        if self.episode_number > 300 and not self.Count2_filled:# and self.iter > 2500:            
             self.characteristic_Count_2[:] = np.copy(self.Count_matrix)
             self.Count2_filled = True
-        if 110 < duration < 115 and not self.Count3_filled:# and self.iter > 2500:
+        if self.episode_number > 3600 and not self.Count3_filled:# and self.iter > 2500:
             self.characteristic_Count_3[:] = np.copy(self.Count_matrix)
             self.Count3_filled = True
         
@@ -619,14 +593,14 @@ class DynaAgent(Agent):
     def run_episode( self, env) -> dict:
         state, info = env.reset()
         done = False
-        self.episode_number += 1
         results = {'duration' : 0}
-
+        self.episode_number = self.episode_number+1
+        #print(np.sum(self.Q_matrix))
         if not self.eval_mode: # otherwise only need duration
             results['ep_env_reward'] = 0
             results['ep_Q_values_change'] = 0
 
-        self.step_index = 0
+        #self.step_index = 0
         total_Q_value_change = 0
         total_reward = 0
         Q_matrix_before = np.copy(self.Q_matrix)

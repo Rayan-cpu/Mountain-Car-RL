@@ -1,0 +1,10 @@
+General : 
+  agent_type : dyna
+  n_episodes : 4000
+
+Files :
+  runs_dir : ../runs
+
+Dyna : 
+  k : 0
+  step_size_coef : 1.5
