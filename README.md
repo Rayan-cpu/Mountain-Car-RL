@@ -1,7 +1,7 @@
 # Read me 
 
 ## Git repo problem
-We decided to work with `git` to avoid 
+We decided to work with `git` to avoid test change
 
 ## Set up Conda environement
 Use `conda env export > requirements.yml` to update the requirements and `conda env create --name myenv -f requirements.yml` to create the associated environment on a new machine. I you just want to update to the new version of the environment, use `conda env update -f requirements.yml --prune`.  
