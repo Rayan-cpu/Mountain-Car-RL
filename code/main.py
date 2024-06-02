@@ -133,7 +133,7 @@ def main(config_file, colab):
 
 
 def compare_performances( n_eps=1000 ):
-    dqn_heuristic = agents.DQNAgentHeuristic( load_from='../runs/dqn_heuristic/up-tau=3_d=2_frac=1.0/trained_model')
+    dqn_heuristic = agents.DQNAgentHeuristic( load_from='../runs/dqn_heuristic/up-tau=3_d=2_frac=0.7/trained_model')
     #dqn_vanilla = agents.DQNVanilla( load_from='../runs/dqn_vanilla/up-tau=3/trained_model')
     dqn_rnd = agents.DQNAgentRND( load_from='../runs/dqn_rnd/up-tau=1_r-fact=10.0/trained_model')
     step_size_coef = 1.5
@@ -186,7 +186,7 @@ def compare_performances( n_eps=1000 ):
     ax[2].set_ylabel('Density')
 
     # plot of rewards of the interesting simulations !
-    data_heuristic = pd.read_hdf('../runs/dqn_heuristic/up-tau=3_d=2_frac=1.0/metrics.h5', key='data')
+    data_heuristic = pd.read_hdf('../runs/dqn_heuristic/up-tau=3_d=2_frac=0.7/metrics.h5', key='data')
     data_dqn = pd.read_hdf('../runs/dqn_rnd/up-tau=1_r-fact=10.0/metrics.h5', key='data')
     data_dyna = pd.read_hdf('../runs/dyna/dyna-k=3-ss_coef=1.5/metrics.h5', key='data')
     smoothing = 30
@@ -201,6 +201,7 @@ def compare_performances( n_eps=1000 ):
     ax[0].legend()
     plt.savefig('comparison.png', bbox_inches='tight')
 
+    analyse.heuristic_comparison([0.01,0.7,35.0])
 
     pass
 
@@ -215,6 +216,5 @@ if __name__ == '__main__':
     
     # if comparison is given as an argument then run the comparison
     if args.comparison:
-        print(args.comparison)
         compare_performances()
 

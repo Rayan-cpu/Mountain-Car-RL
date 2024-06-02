@@ -114,17 +114,18 @@ def heuristic_comparison( r_factor ):
     fig_path = f'{run_dir}'
 
     fig, ax = plt.subplots( 1, 2, figsize=(11, 4.5), layout='tight' )
-    marker = ['.', '^']
+    marker = ['.', '^', 's']
     for i,r_factor_ in enumerate(r_factor):
         run_path = f'{run_dir}/up-tau={update_tau}_d={degree}_frac={r_factor_}'
+        if r_factor_ == 0.7:
+            run_path = f'{run_path}-long'
         data = pd.read_hdf(f'{run_path}/metrics.h5', key='data')
         
         duration = data['duration']
         successes = get_successes( duration )
         eps = 1 + np.arange(len(duration))
 
-        label = r'$\rho'
-        label = f'{label}={r_factor_:.2f}$'
+        label = f'$A={r_factor_:.2f}$'
         l = ax[1].plot(eps, successes, label=label)
         ax[0].scatter(eps, duration, s=10, marker=marker[i], facecolors='none', edgecolors=l[0].get_color())
   
