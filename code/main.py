@@ -9,11 +9,12 @@ import numpy as np
 import os
 import shutil
 import seaborn
-import analyse # to generate the plots
+import analyse 
+import matplotlib.pyplot as plt
 
 def get_successes( counts ):
     '''
-    Function that returns the cumulated number of successes by a given episode.
+    Function returning cumulated number of successes by a given episode.
     counts : list of durations of the episodes.
     '''
     result = np.zeros(len(counts))
@@ -21,7 +22,11 @@ def get_successes( counts ):
     return np.cumsum(result)
 
 def init_agent( configs ):
-    runs_dir = configs['Files']['runs_dir'] # la ou on conserve les resultas
+    '''
+    Initialize the agent and the path to save the results according to provided config file.
+    configs : dictionary containing the configuration parameters.
+    '''
+    runs_dir = configs['Files']['runs_dir']
     agent_name = configs['General']['agent_type']
     run_dir = f'{runs_dir}/{agent_name}'
     run_path = ''
@@ -58,26 +63,29 @@ def init_agent( configs ):
         raise ValueError(f'Agent {agent_name} not found')
 
 def main(config_file, colab):
+    '''
+    Generate the results of the training of the agent according to the provided config file.
+    config_file : path to the configuration file.
+    colab : boolean indicating if the code is run on google colab.
+    '''
     print('Running')
-
+    
     with open(config_file, 'r') as file:
-        config = yaml.safe_load(file) # lire le config file  
-
+        config = yaml.safe_load(file)  
     agent, run_path, bool_dyna = init_agent( config ) 
+    
     if colab:
         run_path = f'rl-project-Rayan-Tara/code/{run_path}'
-    env = gym.make('MountainCar-v0')
-
-    # si le path nexiste pas alors cree un folder 
+    
     if not os.path.exists(run_path):
         os.makedirs(run_path)
-    # copie moi le fichier config dans le fichier des resultats. 
     shutil.copy(config_file, f'{run_path}/config.yml')
 
-    n_eps = config['General']['n_episodes']   # number of episodes to rum
-    sampling = n_eps // 10   # //k : we will have an update every 1/k fraction of completion
-    results = []   # table to store the outcome of each episode resutls
+    n_eps = config['General']['n_episodes']
+    sampling = n_eps // 10   # we give an update every n_eps // 10 episodes
+    results = []   # table to store the outcome of each episode results
     additional_results = {}
+    env = gym.make('MountainCar-v0')
 
     # to print(l'avancement, the percentage of episodes done !)
     print(f'Starting to train ...')
@@ -160,7 +168,6 @@ def compare_performances( n_eps=1000 ):
             print(f'{i/n_eps*100:.1f} % of episodes done')
     print('Done with comparison !')
 
-    import matplotlib.pyplot as plt
     fig, ax = plt.subplots( 1, 3, figsize=(16, 4.5), layout='tight' )
     marker = ['o', '>','<']
 
@@ -206,15 +213,12 @@ def compare_performances( n_eps=1000 ):
     pass
 
 if __name__ == '__main__':
-    # faire arriver les arugments du config 
-    parser = argparse.ArgumentParser(description='Your script description')
+    parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--config-file', type=str, help='Path to the configuration file', required=True)
-    parser.add_argument('-c', '--comparison', type=bool, help='Wheather to run the comparison', required=False, default=False)
+    parser.add_argument('-c', '--comparison', type=bool, help='Whether to run the comparison', required=False, default=False)
     args = parser.parse_args()
-    # args.config_file est un nom de file 
+
     main(args.config_file, False)
-    
-    # if comparison is given as an argument then run the comparison
     if args.comparison:
         compare_performances()
 
