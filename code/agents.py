@@ -95,7 +95,7 @@ class DQNAgent(Agent) :
         self.batch_size = batch_size
         self.iter = 0
 
-        self.ep_loss = 0. # loss for the current episode
+        self.ep_loss = 0.
         self.ep_env_reward = 0. # reward for the current episode 
         self.ep_aux_reward = 0. # reward for the current episode 
 

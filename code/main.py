@@ -8,7 +8,17 @@ import argparse
 import numpy as np
 import os
 import shutil
+import seaborn
 import analyse # to generate the plots
+
+def get_successes( counts ):
+    '''
+    Function that returns the cumulated number of successes by a given episode.
+    counts : list of durations of the episodes.
+    '''
+    result = np.zeros(len(counts))
+    result = counts < 200
+    return np.cumsum(result)
 
 def init_agent( configs ):
     runs_dir = configs['Files']['runs_dir'] # la ou on conserve les resultas
@@ -55,7 +65,7 @@ def main(config_file, colab):
 
     agent, run_path, bool_dyna = init_agent( config ) 
     if colab:
-        run_path = f'rl-project-Rayan-Tara/code{run_path}'
+        run_path = f'rl-project-Rayan-Tara/code/{run_path}'
     env = gym.make('MountainCar-v0')
 
     # si le path nexiste pas alors cree un folder 
@@ -89,8 +99,8 @@ def main(config_file, colab):
     df = pd.DataFrame(results) # write results to file
     df.to_hdf(f'{run_path}/metrics.h5', key='data', mode='w')
 
-    if config['General']['agent_type'][:3] == 'dqn':
-        agent.save_training(f'{run_path}/trained_model')
+    #if config['General']['agent_type'][:3] == 'dqn':
+    agent.save_training(f'{run_path}/trained_model')
 
     # save additional data in case we are dealing with dyna :
     if bool_dyna:
@@ -121,11 +131,15 @@ def main(config_file, colab):
     analyse.gen_plots(run_path, config['General']['agent_type'])
     print(f'Done plotting !')
 
+
 def compare_performances( n_eps=1000 ):
-    dqn_heuristic = agents.DQNAgentHeuristic( load_from='../runs/dqn_heuristic/up-tau=3_d=2_frac=0.1/trained_model')
-    dqn_vanilla = agents.DQNVanilla( load_from='../runs/dqn_vanilla/up-tau=3/trained_model')
-    #dqn_rnd = agents.DQNAgentRND( load_from='runs/dqn_rnd/up-tau=3_r-fact=0.01/trained_model')
-    #dyna = agents.DynaAgent( load_from='runs/dyna/dyna-k=5-ss_coef=0.1/trained_model')
+    dqn_heuristic = agents.DQNAgentHeuristic( load_from='../runs/dqn_heuristic/up-tau=3_d=2_frac=0.7/trained_model')
+    #dqn_vanilla = agents.DQNVanilla( load_from='../runs/dqn_vanilla/up-tau=3/trained_model')
+    dqn_rnd = agents.DQNAgentRND( load_from='../runs/dqn_rnd/up-tau=1_r-fact=10.0/trained_model')
+    step_size_coef = 1.5
+    x_step= step_size_coef*0.025
+    v_step= step_size_coef*0.005
+    dyna = agents.DynaAgent(x_step=x_step,v_step=v_step,k=3,load_from='../runs/dyna/dyna-k=3-ss_coef=1.5/trained_model')
 
     env = gym.make('MountainCar-v0')
     seeds = np.arange(n_eps)
@@ -138,19 +152,57 @@ def compare_performances( n_eps=1000 ):
         env.reset( seed=seed )
         results[i, 0] = dqn_heuristic.run_episode(env)['duration']
         env.reset( seed=seed )
-        results[i, 1] = dqn_vanilla.run_episode(env)['duration']
-        #results[i, 1] = dqn_rnd.run_episode(env)['duration']
-        #env.reset( seed=seeds[i] )
-        #results[i, 2] = dyna.run_episode(env)['duration']
+        #results[i, 1] = dqn_vanilla.run_episode(env)['duration']
+        results[i, 1] = dqn_rnd.run_episode(env)['duration']
+        env.reset( seed=seed )
+        results[i, 2] = dyna.run_episode(env)['duration']
         if i % sampling == 0:
             print(f'{i/n_eps*100:.1f} % of episodes done')
     print('Done with comparison !')
 
     import matplotlib.pyplot as plt
-    plt.figure()
-    plt.plot(results[:, 0], label='DQN Heuristic')
-    plt.plot(results[:, 1], label='DQN Vanilla')
-    plt.savefig('comparison.png')
+    fig, ax = plt.subplots( 1, 3, figsize=(16, 4.5), layout='tight' )
+    marker = ['o', '>','<']
+
+    duration_dqn_heuristic = results[:, 0]
+    eps = 1 + np.arange(len(duration_dqn_heuristic))
+    ax[1].scatter(eps, duration_dqn_heuristic, s=15, marker=marker[0])
+        
+    duration_dqn_rnd = results[:, 1]
+    eps = 1 + np.arange(len(duration_dqn_rnd))
+    ax[1].scatter(eps, duration_dqn_rnd, s=10, marker=marker[1])
+
+    duration_dyna = results[:, 2]
+    eps = 1 + np.arange(len(duration_dyna))
+    ax[1].scatter(eps, duration_dyna, s=10, marker=marker[2])
+  
+    ax[1].set_xlabel('Episode')
+    ax[1].set_ylabel('Duration')
+
+    ax[2]=seaborn.kdeplot(duration_dqn_heuristic, label='DQN heuristic')
+    ax[2]=seaborn.kdeplot(duration_dqn_rnd, label='DQN RND')
+    ax[2]=seaborn.kdeplot(duration_dyna, label='Dyna')
+    ax[2].set_xlabel('Duration')
+    ax[2].set_ylabel('Density')
+
+    # plot of rewards of the interesting simulations !
+    data_heuristic = pd.read_hdf('../runs/dqn_heuristic/up-tau=3_d=2_frac=0.7/metrics.h5', key='data')
+    data_dqn = pd.read_hdf('../runs/dqn_rnd/up-tau=1_r-fact=10.0/metrics.h5', key='data')
+    data_dyna = pd.read_hdf('../runs/dyna/dyna-k=3-ss_coef=1.5/metrics.h5', key='data')
+    smoothing = 30
+    reward_heuristic = np.convolve(data_heuristic['ep_env_reward'], np.ones(smoothing)/smoothing, mode='valid')
+    reward_dqn = np.convolve(data_dqn['ep_env_reward'], np.ones(smoothing)/smoothing, mode='valid')
+    reward_dyna = np.convolve(data_dyna['ep_env_reward'], np.ones(smoothing)/smoothing, mode='valid')
+    ax[0].plot(reward_heuristic, label='DQN heuristic')
+    ax[0].plot(reward_dqn, label='DQN RND')
+    ax[0].plot(reward_dyna, label='Dyna')
+    ax[0].set_xlabel('Episode')
+    ax[0].set_ylabel('Reward')
+    ax[0].legend()
+    plt.savefig('comparison.png', bbox_inches='tight')
+
+    analyse.heuristic_comparison([0.01,0.7,35.0])
+
     pass
 
 if __name__ == '__main__':
@@ -164,5 +216,5 @@ if __name__ == '__main__':
     
     # if comparison is given as an argument then run the comparison
     if args.comparison:
-        print(args.comparison)
         compare_performances()
+
