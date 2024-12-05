@@ -3,11 +3,11 @@ import torch
 import numpy as np
 from abc import ABC, abstractmethod
 from utility import MLP, ReplayBuffer
-#torch.autograd.set_detect_anomaly(True) # this is to get more info about 
-# problem with autograd ( it 10x the computation time tho :/ )
 
 class Agent(ABC):
-    # Abstract base class for all agents, defines the mandatory methods.
+    '''
+    Abstract base class for all agents, defines the mandatory methods.
+    '''
     def __init__(self, eval_mode):
         self.eval_mode = eval_mode
         pass
@@ -27,17 +27,28 @@ class Agent(ABC):
 
     @abstractmethod
     def run_episode( self, env ) -> dict:
+        '''
+        Run an episode of the environment. The agent will interact with the environment and update its model.
+        env : environment to interact with
+        return : dictionary with the relevant results of the episode (agent-dpendent)
+        '''
         pass
 
     @abstractmethod
     def save_training(self, filename):
-        # save the model to a file
+        '''
+        Save the model to a file, so that it can be run in evaluation mode later.
+        filename : name of the file to save the model to
+        '''
         pass
 
-    actions = [0,1,2] # we can move left, stay or move right (same across all agents)
-    full_ep_len = 200
+    actions = [0,1,2] # can move left, stay or move right (same across agents)
+    full_ep_len = 200 # also same across agents
 
 class RandomAgent(Agent):
+    '''
+    Agent that selects actions randomly. It does not learn anything.
+    '''
     def __init__(self):
         super().__init__(eval_mode=False)
         pass
@@ -70,14 +81,17 @@ class RandomAgent(Agent):
         pass 
 
 class DQNAgent(Agent) :
+    '''
+    Agent that uses a Deep Q-Network to learn the optimal policy. 
+    It uses a replay buffer to store samples and train the network.
+    '''
     def __init__(self, epsilon=0.9, gamma=0.99, buffer_len=50, batch_size=64, pre_train_steps=0, update_period=1, load_from=None):
-        
         self.eps_start = epsilon # will then decay exponentially to eps_end
-        self.eps_end = 0.05 # asymptotic value for epsilon
-        self.eps_tau = 100*self.full_ep_len # characteristic time for the decay
+        self.eps_end = 0.05 
+        self.eps_tau = 100*self.full_ep_len # characteristic time for decay
 
-        self.gamma = gamma
-        self.buffer = ReplayBuffer(buffer_len*self.full_ep_len) # buffel_len in full episodes
+        self.gamma = gamma # discount factor
+        self.buffer = ReplayBuffer(buffer_len*self.full_ep_len) 
         self.batch_size = batch_size
         self.iter = 0
 
