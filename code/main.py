@@ -83,11 +83,11 @@ def main(config_file, colab):
 
     n_eps = config['General']['n_episodes']
     sampling = n_eps // 10   # we give an update every n_eps // 10 episodes
-    results = []   # table to store the outcome of each episode results
+    results = []   # list to store the outcome of each episode results
     additional_results = {}
-    env = gym.make('MountainCar-v0')
 
-    # to print(l'avancement, the percentage of episodes done !)
+    env = gym.make('MountainCar-v0')
+    
     print(f'Starting to train ...')
     start = time.time()
     bool_final = False 

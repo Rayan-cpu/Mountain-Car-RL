@@ -472,7 +472,6 @@ def plot_additional_dyna(eps,fig_path,pos_axis_plot,vel_axis_plot,characteristic
 
 
 def gen_plots(run_path, agent):
-
     fig_path = f'{run_path}/figs' 
     if not os.path.exists(fig_path):
         os.makedirs(fig_path)

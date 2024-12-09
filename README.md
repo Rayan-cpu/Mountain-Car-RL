@@ -1,18 +1,121 @@
-# Read me 
+# Reinforcement Learning with Custom Agents
 
-## Git repo problem
-We decided to work with git to deal with merges easily. Everything went smoothly untill yesterday, when we faced a problem which we could not solve. Some files were currupted doing one of Rayan's pushes and Tara was from then on not able to pull anymore. We managed to work around this as there was little left to do, but thought it was worth mentioning. Some things are therefore a bit more wanky than if everything went according to plan. For example, the conda requirements were not tested with the last version of the code (as Rayan uses pip). 
+This repo contains implementations and analysis for reinforcement learning agents, including Random Agents, Deep Q-Networks (DQN), and Dyna agents. The primary objective is to explore and compare the performance of various reinforcement learning methods on the `MountainCar-v0` environment.
 
-## Set up Conda environement
-Use conda env create --name myenv -f requirements.yml to create the associated environment on a new machine. If you just want to update to the new version of the environment, use conda env update -f requirements.yml --prune.  
+### Overview
 
-## Run training run
-All the configuration files are found in the ..\configs folder. Run the python main.py -f ..\configs\<config-name>.yml command from the \code folder to start the training run. A copy of used configuration file along with the results (training data and figures) will be stored in the in the ..\runs\<run_name> folder. The <run_name> here will be given from the parameters associated to the run and should therefore be easy to identify.  
-Note that the configuration files do not represent an exhaustive list of the training runs we made. 
+The repository includes:
+- Implementation of agents (`RandomAgent`, `DQNAgent`, and `DynaAgent`).
+- Custom reward functions and auxiliary reward mechanisms for DQN.
+- Replay buffers and MLP (Multi-Layer Perceptron) for training the agents.
+- Tools for running experiments and analyzing results.
+- Visualization scripts to compare agent performance.
 
-## Generating all the results 
-This can be done in the generate_results.ipynb file. Open it up for more instructions in case you were interested. Notice that running the whole file takes more than an hour.
+### Features
 
-## Implementation details
-* The utility.py file contains the definitions of the MLP (multi layer perceptron) and ReplayBuffer classes. These are used as attributes for the DQN agent classes. 
-* The agents.py file contains the definitions of the different agents which can be used. We have a base abstract class Agent which is used to declare the methods which should be provided for every agent (no instances can be created if these are not provided). Then, we have RandomAgent, DQNAgent and DynaAgent as sub-classes, which inherit from Agent. The analyse.py file then takes care to plot the relevant quantities for each of the agents, by calling the right functions
+1. **Agents**:
+   - **RandomAgent**: Performs random actions without learning.
+   - **DQNAgent**: Implements DQN with auxiliary reward mechanisms.
+   - **DynaAgent**: Uses a model-based approach to reinforcement learning.
+
+2. **Analysis and Visualization**:
+   - Performance plots for rewards, losses, success rates, and duration.
+   - Visualization of state visit counts and Q-value matrices.
+   - Analysis of characteristic trajectories.
+
+3. **Environment**:
+   - The agents interact with the `MountainCar-v0` environment from `gymnasium`.
+
+### Repository Structure
+
+```
+├── code
+    ├── agents.py               # Implementation of RL agents
+    ├── analyse.py              # Visualization and result analysis tools
+    ├── main.py                 # Main script for training and evaluating agents
+    ├── utility.py              # Supporting classes like ReplayBuffer and MLP
+    ├── results_submission.ipynb # Notebook for analyzing results interactively
+    ├── comparison.png          # Example output of performance comparison
+├── configs
+    ├── {config_files}.yml      # Configuration files (to keep easy reference)
+    ...
+├── runs
+    ├── {agent_name}/           # Folder for results associated to given agent
+        ├── {param_values}/
+            ├── figs/
+                ├── {figures}.png
+                ...
+            ├── config.yml      # Configuration associated to the given run 
+            ├── metrics.h5      # Data associated to the run
+            ├── trained_model.pt  # Weighs for trained model
+        ...
+    ...
+├── report 
+    # Files associated to the report 
+```
+
+
+### Getting Started
+
+#### Prerequisites
+
+Install dependencies using:
+```bash
+pip install -r requirements.yml
+```
+or the associated conda command 
+```bash
+conda env create --name env_name -f requirements.yml
+```
+
+#### Running the Code
+
+1. **Training Agents**:
+   Configure the `config.yml` file associated to your experiment and run:
+   ```bash
+   python main.py --config config.yml --colab False
+   ```
+
+2. **Performance Comparison**:
+   Compare the performance of agents:
+   ```bash
+   python main.py --config {whatever_file}.yml --compare True
+   ```
+
+3. **Visualizing Results**:
+   Results and plots are saved in the `runs/` directory. Example plots include reward trajectories, success rates, and Q-value matrices.
+
+#### Example Configuration
+
+Below is an example of a `config.yml` file:
+
+```yaml
+General : 
+  agent_type : dqn_heuristic
+  n_episodes : 3000
+
+Files :
+  runs_dir : ../runs
+
+DQN : 
+  Qs_NN_update_period : 3
+
+Heuristic :
+  degree : 2
+  reward_scale : 0.7
+```
+
+### Results and Plots
+
+The repository provides detailed plots for:
+- Rewards per episode.
+- Durations and success rates.
+- Density estimates of agent durations.
+
+Example output plot (`comparison.png`):
+
+![Comparison](code/comparison.png)
+
+### Contributing
+
+Contributions are welcome! If you want to add features or fix bugs, please fork the repository and open a pull request.
